@@ -12,7 +12,7 @@ services:
       DB_PORT: 5432
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-123}
-      DB_NAME: ${DB_NAME:-Digital Invitation & Attendance Management}
+      DB_NAME: ${DB_NAME:-digital_meeting_minutes}
       JWT_SECRET: ${JWT_SECRET:-change_this_dev_secret_to_32_chars_minimum}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
@@ -22,17 +22,17 @@ services:
       - ./backend:/app
       - /app/node_modules
       - backend_uploads:/app/uploads
-
+ 
   frontend:
     build:
       context: ./frontend
       target: build
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://api.digitalinvitationmanagementsystem.it.com/api/v1}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:5001/api/v1}
     command: npm run dev -- --host 0.0.0.0
     restart: unless-stopped
     environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://api.digitalinvitationmanagementsystem.it.com/api/v1}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:5001/api/v1}
     depends_on:
       - backend
     ports:
@@ -40,6 +40,7 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
-
+ 
 volumes:
   backend_uploads:
+ 
