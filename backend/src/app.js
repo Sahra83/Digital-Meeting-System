@@ -22,6 +22,7 @@ app.get('/', (req, res) => {
 // Explicitly register API routes
 console.log(' Initializing API Routes...');
 app.use('/api', routes);
+app.use('/api/v1', routes);
 
 app.use((req, res, next) => {
   // Attach socket.io instance (set in index.js) to each request for controllers
