@@ -2,7 +2,7 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-ARG VITE_API_BASE_URL=https://api.digitalinvitationmanagementsystem.it.com/api/v1
+ARG VITE_API_BASE_URL=https://api.digitalmeeting24.com/api/v1
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 COPY package*.json ./
