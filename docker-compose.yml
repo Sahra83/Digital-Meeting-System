@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: '${POSTGRES_DB:-digital_meeting_minutes}'
       POSTGRES_USER: '${POSTGRES_USER:-postgres}'
-      POSTGRES_PASSWORD: '${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}'
+      POSTGRES_PASSWORD: '${POSTGRES_PASSWORD:-123}'
     volumes:
       - 'postgres_data:/var/lib/postgresql/data'
       - './backend/src/database/setup.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro'
@@ -34,12 +34,12 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: '${POSTGRES_USER:-postgres}'
-      DB_PASSWORD: '${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}'
+      DB_PASSWORD: '${POSTGRES_PASSWORD:-123}'
       DB_NAME: '${POSTGRES_DB:-digital_meeting_minutes}'
       PGHOST: '${PGHOST:-postgres}'
       PGPORT: '${PGPORT:-5432}'
       PGUSER: '${POSTGRES_USER:-postgres}'
-      PGPASSWORD: '${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}'
+      PGPASSWORD: '${POSTGRES_PASSWORD:-123}'
       PGDATABASE: '${POSTGRES_DB:-digital_meeting_minutes}'
       JWT_SECRET: '${JWT_SECRET:-}'
       SERVICE_BASE64_64_JWT_SECRET: '${SERVICE_BASE64_64_JWT_SECRET}'
@@ -80,3 +80,4 @@ volumes:
   postgres_data:
     name: '${POSTGRES_VOLUME_NAME:-digital_meeting_minutes_postgres_data}'
   backend_uploads: null
+ 
