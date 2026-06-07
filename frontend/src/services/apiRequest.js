@@ -2,7 +2,7 @@
 // Centralized wrapper for API requests used by the front‑end services.
 // Adjust BASE_URL as needed for your backend endpoint.
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://api.digitalmeeting24.com/api/v1";
 const TOKEN_KEY = "auth-token";
 
 /**

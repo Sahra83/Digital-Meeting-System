@@ -1,6 +1,7 @@
 // src/pages/Collaboration.jsx
 import React, { useEffect, useState } from 'react';
 import { meetingApi } from '../services/api';
+import { apiRequest } from '../services/apiRequest';
 import { io } from 'socket.io-client';
 
 // Helper component for a single comment
@@ -103,36 +104,43 @@ function CommentItem({ comment, onEdit, onDelete }) {
       return;
     }
     // Load all comments for the meeting (no item filter for now)
-    fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/collaboration/${selectedMeeting}/comments`)
-      .then((res) => res.json())
-      .then((data) => setComments(data.data || []));
+    apiRequest(`/collaboration/${selectedMeeting}/comments`)
+      .then((data) => setComments(data.data || []))
+      .catch((err) => console.error(err));
   }, [selectedMeeting]);
 
   const handlePost = async () => {
     if (!newText.trim()) return;
-    await fetch(
-      `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/collaboration/${selectedMeeting}/comments`,
-      {
+    try {
+      await apiRequest(`/collaboration/${selectedMeeting}/comments`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commentText: newText }),
-      }
-    );
-    setNewText('');
+        body: { commentText: newText },
+      });
+      setNewText('');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleEdit = async (id, text) => {
-    await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/collaboration/comments/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ commentText: text }),
-    });
+    try {
+      await apiRequest(`/collaboration/comments/${id}`, {
+        method: 'PUT',
+        body: { commentText: text },
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleDelete = async (id) => {
-    await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/collaboration/comments/${id}`, {
-      method: 'DELETE',
-    });
+    try {
+      await apiRequest(`/collaboration/comments/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
