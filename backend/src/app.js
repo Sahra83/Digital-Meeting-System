@@ -7,7 +7,11 @@ const { errorHandler, notFoundHandler } = require('./middleware/errorMiddleware'
 const app = express();
 const path = require('path');
 
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:3000', 'https://www.digitalmeeting24.com', 'https://digitalmeeting24.com'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  credentials: true
+}));
 app.use(morgan('dev'));
 app.use(express.json());
 
