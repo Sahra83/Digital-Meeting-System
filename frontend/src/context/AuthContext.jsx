@@ -37,6 +37,10 @@ export function AuthProvider({ children }) {
     return result.user
   }, [])
 
+  const updateCurrentUser = useCallback((nextUser) => {
+    setUser(nextUser)
+  }, [])
+
   useEffect(() => {
     let active = true
 
@@ -76,9 +80,10 @@ export function AuthProvider({ children }) {
       logout,
       sessionMessage,
       token,
+      updateCurrentUser,
       user,
     }),
-    [loading, login, logout, sessionMessage, token, user],
+    [loading, login, logout, sessionMessage, token, updateCurrentUser, user],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

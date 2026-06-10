@@ -30,6 +30,12 @@ export const participantApi = {
   downloadAttachment: (attachmentId, filename) => apiDownload(`/participant/task-attachments/${attachmentId}/download`, filename)
 };
 
+export const userApi = {
+  getProfile: () => apiRequest('/users/me'),
+  updateProfile: (payload) => apiRequest('/users/me', { method: 'PUT', body: payload }),
+  getLogs: (params = {}) => apiRequest(`/users/logs${toQuery(params)}`)
+};
+
 export const organizerApi = {
   getSubmittedTasks: () => apiRequest('/organizer/tasks/submitted'),
   approveTask: (taskId) => apiRequest(`/organizer/tasks/${taskId}/approve`, { method: 'PATCH' }),

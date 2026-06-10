@@ -10,8 +10,10 @@ function Sidebar({ isOpen, onClose }) {
     { name: 'Dashboard Overview', path: '/dashboard/overview', icon: 'dashboard' },
     { name: 'User Management', path: '/dashboard/users', icon: 'users' },
     { name: 'Meeting Schedule', path: '/dashboard/meetings', icon: 'calendar' },
+    { name: 'Assigned Tasks', path: '/dashboard/tasks', icon: 'tasks' },
     { name: 'Reports & Analytics', path: '/dashboard/reports', icon: 'chart' },
-    { name: 'Assigned Tasks', path: '/dashboard/tasks', icon: 'tasks' }
+    { name: 'User Logs', path: '/dashboard/user-logs', icon: 'history' },
+    { name: 'Admin Profile', path: '/dashboard/profile', icon: 'user' }
   ]
 
   return (
@@ -67,15 +69,19 @@ function Sidebar({ isOpen, onClose }) {
 
           {/* User Profile Info (Small) */}
           <div className="border-t border-slate-200 p-4">
-            <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
+            <NavLink
+              to="/dashboard/profile"
+              onClick={() => window.innerWidth < 1024 && onClose()}
+              className="flex items-center gap-3 rounded-lg bg-slate-50 p-3 transition hover:bg-blue-50"
+            >
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
                 <span className="text-sm font-bold">{user?.fullname?.charAt(0).toUpperCase()}</span>
               </div>
               <div className="overflow-hidden">
                 <p className="truncate text-sm font-bold text-slate-900">{user?.fullname}</p>
-                <p className="truncate text-xs text-slate-500">{user?.role_name}</p>
+                <p className="truncate text-xs text-slate-500">@{user?.username} · {user?.role_name}</p>
               </div>
-            </div>
+            </NavLink>
           </div>
         </div>
       </aside>

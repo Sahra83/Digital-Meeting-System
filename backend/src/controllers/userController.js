@@ -40,6 +40,15 @@ async function listRoles(req, res, next) {
   }
 }
 
+async function listUserLogs(req, res, next) {
+  try {
+    const logs = await userService.listUserLogs(req.query.limit);
+    res.json({ logs });
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function updateUser(req, res, next) {
   try {
     const user = await userService.updateUser(req.params.id, req.body);
@@ -72,6 +81,7 @@ module.exports = {
   deleteUser,
   getProfile,
   getUserParticipation,
+  listUserLogs,
   listRoles,
   listUsers,
   updateProfile,

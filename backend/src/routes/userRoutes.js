@@ -12,6 +12,7 @@ router.use(authenticate);
 router.get('/me', userController.getProfile);
 router.put('/me', profileValidation, validateRequest, userController.updateProfile);
 router.get('/roles', authorize('Admin'), userController.listRoles);
+router.get('/logs', authorize('Admin'), userController.listUserLogs);
 router.get('/', authorize('Admin'), userController.listUsers);
 router.post('/', authorize('Admin'), userValidation, validateRequest, userController.createUser);
 router.put('/:id', authorize('Admin'), userUpdateValidation, validateRequest, userController.updateUser);

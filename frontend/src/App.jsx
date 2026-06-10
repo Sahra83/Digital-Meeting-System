@@ -18,6 +18,7 @@ import MyTasks from './pages/MyTasks'
 import Collaboration from './pages/Collaboration'
 import MyMeetings from './pages/MyMeetings'
 import MeetingReports from './pages/MeetingReports'
+import UserLogs from './pages/UserLogs'
 function App() {
   return (
     <BrowserRouter>
@@ -32,6 +33,7 @@ function App() {
             <Route path="/dashboard/users" element={<UserManagement />} />
             <Route path="/dashboard/meetings" element={<MeetingManagement />} />
             <Route path="/dashboard/reports" element={<MeetingReports />} />
+            <Route path="/dashboard/user-logs" element={<UserLogs />} />
             <Route path="/dashboard/profile" element={<Profile />} />
             <Route path="/dashboard/collaboration" element={<Collaboration />} />
             <Route path="/dashboard/tasks" element={<AssignedTasksPage />} />

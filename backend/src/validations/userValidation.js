@@ -20,8 +20,11 @@ const userUpdateValidation = [
 
 const profileValidation = [
   body('fullname').trim().isLength({ min: 2, max: 120 }).withMessage('Full name must be between 2 and 120 characters'),
+  body('username').optional({ checkFalsy: true }).trim().isLength({ min: 3, max: 80 }).withMessage('Username must be between 3 and 80 characters'),
   body('email').optional({ nullable: true, checkFalsy: true }).isEmail().withMessage('A valid email address is required').normalizeEmail(),
   body('phone').optional({ nullable: true, checkFalsy: true }).trim().isLength({ max: 40 }).withMessage('Phone must be 40 characters or fewer'),
+  body('currentPassword').if(body('newPassword').exists({ checkFalsy: true })).notEmpty().withMessage('Current password is required'),
+  body('newPassword').optional({ checkFalsy: true }).isLength({ min: 4 }).withMessage('New password must be at least 4 characters'),
 ];
 
 module.exports = {

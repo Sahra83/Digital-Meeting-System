@@ -80,24 +80,123 @@ async function createUser(payload) {
 }
 
 async function updateProfile(userId, payload) {
+  const user = await findUserById(userId);
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  const nextUsername = payload.username !== undefined ? payload.username.trim() : user.username;
+  if (nextUsername.toLowerCase() !== user.username.toLowerCase()) {
+    const existingUser = await findUserByUsername(nextUsername);
+    if (existingUser) {
+      throw new ApiError(409, 'A user with this username already exists');
+    }
+  }
+
+  let passwordHash = null;
+  if (payload.newPassword) {
+    const passwordResult = await db.query('SELECT password FROM users WHERE id = $1', [userId]);
+    const currentHash = passwordResult.rows[0]?.password;
+    const passwordMatches = currentHash ? await bcrypt.compare(payload.currentPassword || '', currentHash) : false;
+
+    if (!passwordMatches) {
+      throw new ApiError(400, 'Current password is incorrect');
+    }
+
+    passwordHash = await bcrypt.hash(payload.newPassword, 12);
+  }
+
   await db.query(
     `
       UPDATE users
       SET fullname = $1,
           phone = $2,
           email = $3,
+          username = $4,
+          password = COALESCE($5, password),
           updated_at = now()
-      WHERE id = $4
+      WHERE id = $6
     `,
     [
       payload.fullname,
       payload.phone || null,
       payload.email ? payload.email.toLowerCase() : null,
+      nextUsername,
+      passwordHash,
       userId
     ],
   );
 
   return findUserById(userId);
+}
+
+async function listUserLogs(limit = 80) {
+  const safeLimit = Math.min(Math.max(Number(limit) || 80, 1), 200);
+  const result = await db.query(
+    `
+      SELECT *
+      FROM (
+        SELECT
+          'user_created' AS type,
+          'User created' AS title,
+          u.fullname AS actor_name,
+          u.username AS actor_username,
+          r.role_name AS actor_role,
+          u.created_at AS occurred_at,
+          json_build_object('userId', u.id, 'status', u.status) AS metadata
+        FROM users u
+        JOIN roles r ON r.id = u.role_id
+
+        UNION ALL
+
+        SELECT
+          'user_updated' AS type,
+          'User profile updated' AS title,
+          u.fullname AS actor_name,
+          u.username AS actor_username,
+          r.role_name AS actor_role,
+          u.updated_at AS occurred_at,
+          json_build_object('userId', u.id, 'status', u.status) AS metadata
+        FROM users u
+        JOIN roles r ON r.id = u.role_id
+        WHERE u.updated_at > u.created_at
+
+        UNION ALL
+
+        SELECT
+          'meeting_created' AS type,
+          'Meeting created' AS title,
+          u.fullname AS actor_name,
+          u.username AS actor_username,
+          r.role_name AS actor_role,
+          m.created_at AS occurred_at,
+          json_build_object('meetingId', m.id, 'meetingTitle', m.title) AS metadata
+        FROM meetings m
+        JOIN users u ON u.id = m.organizer_id
+        JOIN roles r ON r.id = u.role_id
+
+        UNION ALL
+
+        SELECT
+          'task_assigned' AS type,
+          'Task assigned' AS title,
+          u.fullname AS actor_name,
+          u.username AS actor_username,
+          r.role_name AS actor_role,
+          t.created_at AS occurred_at,
+          json_build_object('taskId', t.id, 'taskStatus', t.status) AS metadata
+        FROM assigned_tasks t
+        JOIN users u ON u.id = t.assigned_to
+        JOIN roles r ON r.id = u.role_id
+        WHERE t.assigned_to IS NOT NULL
+      ) activity
+      ORDER BY occurred_at DESC
+      LIMIT $1
+    `,
+    [safeLimit],
+  );
+
+  return result.rows;
 }
 
 async function updateUser(userId, payload) {
@@ -198,6 +297,7 @@ module.exports = {
   findUserById,
   getParticipation,
   getPasswordHashByUsername,
+  listUserLogs,
   listRoles,
   listUsers,
   updateProfile,
