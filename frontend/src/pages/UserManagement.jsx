@@ -94,25 +94,9 @@ function UserManagement() {
     }
   }
 
-  const handleDeleteClick = async (user) => {
+  const handleDeleteClick = (user) => {
     setPendingDelete(user)
-    try {
-      const { meetings } = await participantApi.participation(user.id)
-      if (meetings && meetings.length > 0) {
-        const meetingList = meetings.map(m => `• ${m}`).join('\n')
-        showAlert(
-          'danger', 
-          'Warning: Active Participation', 
-          `Are you sure you want to delete ${user.fullname}?\n\nThis user is a participant in the following meeting schedule(s):\n${meetingList}\n\nThis action cannot be undone.`,
-          confirmDelete,
-          'Delete User'
-        )
-      } else {
-        showAlert('danger', 'Confirm Delete', `Are you sure you want to delete ${user.fullname}? This action cannot be undone.`, confirmDelete, 'Delete User')
-      }
-    } catch (err) {
-      showAlert('error', 'Operation Failed', 'Could not check user participation.')
-    }
+    showAlert('danger', 'Confirm Delete', `Are you sure you want to delete this user: ${user.username}?\n\nThis action cannot be undone.`, confirmDelete, 'Delete User', 'No')
   }
 
   async function confirmDelete() {
@@ -196,6 +180,8 @@ function UserManagement() {
         message={alert.message}
         onConfirm={alert.onConfirm}
         onCancel={() => setAlert(prev => ({ ...prev, isOpen: false }))}
+        confirmText={alert.confirmText}
+        cancelText={alert.cancelText}
         loading={isAlertLoading}
       />
     </div>

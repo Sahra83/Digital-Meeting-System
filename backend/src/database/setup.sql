@@ -185,4 +185,26 @@ CREATE INDEX idx_comments_meeting   ON comments(meeting_id);
 CREATE INDEX idx_comments_item      ON comments(item_type, item_id);
 CREATE INDEX idx_comments_parent    ON comments(parent_id);
 
+CREATE TABLE IF NOT EXISTS user_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  actor_name VARCHAR(120),
+  actor_username VARCHAR(80),
+  actor_role VARCHAR(80),
+  action VARCHAR(80) NOT NULL,
+  entity_type VARCHAR(80),
+  entity_id UUID,
+  target_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  target_username VARCHAR(80),
+  details TEXT,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  ip_address INET,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_logs_created_at ON user_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_logs_actor_id ON user_logs(actor_id);
+CREATE INDEX IF NOT EXISTS idx_user_logs_action ON user_logs(action);
+
 COMMIT;

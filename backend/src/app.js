@@ -3,6 +3,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const routes = require('./routes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorMiddleware');
+const { recordUserLog } = require('./services/auditService');
 
 const app = express();
 const path = require('path');
@@ -14,6 +15,32 @@ app.use(cors({
 }));
 app.use(morgan('dev'));
 app.use(express.json());
+
+app.use((req, res, next) => {
+  const method = req.method.toUpperCase();
+  const shouldAudit = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+  const path = req.originalUrl || '';
+  const hasDetailedLog =
+    /\/api(\/v1)?\/auth\/(login|logout)/.test(path) ||
+    /\/api(\/v1)?\/users(\/|$)/.test(path);
+
+  if (shouldAudit && !hasDetailedLog) {
+    res.on('finish', () => {
+      if (req.user && res.statusCode < 400) {
+        recordUserLog({
+          actor: req.user,
+          action: `api_${method.toLowerCase()}`,
+          entityType: 'api_request',
+          details: `${method} ${path}`,
+          metadata: { statusCode: res.statusCode },
+          req,
+        });
+      }
+    });
+  }
+
+  next();
+});
 
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to the Digital Meeting API' });

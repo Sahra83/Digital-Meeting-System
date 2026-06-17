@@ -3,10 +3,13 @@ import Icon from '../components/Icon'
 import { userApi } from '../services/api'
 
 const typeLabels = {
+  login_success: 'Login successful',
+  login_failed: 'Login failed',
+  logout: 'Logout',
   user_created: 'User created',
   user_updated: 'Profile updated',
-  meeting_created: 'Meeting created',
-  task_assigned: 'Task assigned',
+  user_deleted: 'User deleted',
+  profile_updated: 'Profile updated',
 }
 
 function formatDate(value) {
@@ -66,7 +69,7 @@ function UserLogs() {
           {logs.map((log, index) => (
             <article key={`${log.type}-${log.occurred_at}-${index}`} className="grid gap-3 px-5 py-4 sm:grid-cols-[auto_1fr_auto] sm:items-center">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
-                <Icon name={log.type === 'meeting_created' ? 'calendar' : log.type === 'task_assigned' ? 'tasks' : 'user'} className="h-5 w-5" />
+                <Icon name={log.type?.includes('login') || log.type === 'logout' ? 'history' : 'user'} className="h-5 w-5" />
               </div>
               <div className="min-w-0">
                 <p className="font-semibold text-slate-900">{typeLabels[log.type] || log.title}</p>
@@ -75,6 +78,14 @@ function UserLogs() {
                 </p>
                 {log.metadata?.meetingTitle && (
                   <p className="mt-1 text-sm text-slate-600">{log.metadata.meetingTitle}</p>
+                )}
+                {log.details && (
+                  <p className="mt-1 text-sm text-slate-600">{log.details}</p>
+                )}
+                {(log.target_username || log.ip_address) && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    {log.target_username ? `Target: @${log.target_username}` : ''}{log.target_username && log.ip_address ? ' - ' : ''}{log.ip_address ? `IP: ${log.ip_address}` : ''}
+                  </p>
                 )}
               </div>
               <time className="text-sm text-slate-500" dateTime={log.occurred_at}>

@@ -12,6 +12,10 @@ export function AuthProvider({ children }) {
   const [sessionMessage, setSessionMessage] = useState(() => window.sessionStorage.getItem(SESSION_MESSAGE_KEY) || '')
 
   const logout = useCallback((message = '') => {
+    if (window.localStorage.getItem(TOKEN_KEY)) {
+      authApi.logout().catch(() => {})
+    }
+
     window.localStorage.removeItem(TOKEN_KEY)
     setToken(null)
     setUser(null)

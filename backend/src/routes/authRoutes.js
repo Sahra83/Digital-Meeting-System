@@ -8,6 +8,7 @@ console.log('--- Registering Auth Routes ---');
 const router = express.Router();
 
 router.post('/login', loginValidation, validateRequest, authController.login);
+router.post('/logout', authenticate, authController.logout);
 router.get('/session', authenticate, authController.session);
 
 module.exports = router;

@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const db = require('../config/db');
 const userQueries = require('../queries/userQueries');
 const ApiError = require('../utils/apiError');
+const { ensureUserLogsTable } = require('./auditService');
 
 async function findUserByUsername(username) {
   const result = await db.query(userQueries.findByUsername, [username]);
@@ -132,65 +133,26 @@ async function updateProfile(userId, payload) {
 
 async function listUserLogs(limit = 80) {
   const safeLimit = Math.min(Math.max(Number(limit) || 80, 1), 200);
+  await ensureUserLogsTable();
   const result = await db.query(
     `
-      SELECT *
-      FROM (
-        SELECT
-          'user_created' AS type,
-          'User created' AS title,
-          u.fullname AS actor_name,
-          u.username AS actor_username,
-          r.role_name AS actor_role,
-          u.created_at AS occurred_at,
-          json_build_object('userId', u.id, 'status', u.status) AS metadata
-        FROM users u
-        JOIN roles r ON r.id = u.role_id
-
-        UNION ALL
-
-        SELECT
-          'user_updated' AS type,
-          'User profile updated' AS title,
-          u.fullname AS actor_name,
-          u.username AS actor_username,
-          r.role_name AS actor_role,
-          u.updated_at AS occurred_at,
-          json_build_object('userId', u.id, 'status', u.status) AS metadata
-        FROM users u
-        JOIN roles r ON r.id = u.role_id
-        WHERE u.updated_at > u.created_at
-
-        UNION ALL
-
-        SELECT
-          'meeting_created' AS type,
-          'Meeting created' AS title,
-          u.fullname AS actor_name,
-          u.username AS actor_username,
-          r.role_name AS actor_role,
-          m.created_at AS occurred_at,
-          json_build_object('meetingId', m.id, 'meetingTitle', m.title) AS metadata
-        FROM meetings m
-        JOIN users u ON u.id = m.organizer_id
-        JOIN roles r ON r.id = u.role_id
-
-        UNION ALL
-
-        SELECT
-          'task_assigned' AS type,
-          'Task assigned' AS title,
-          u.fullname AS actor_name,
-          u.username AS actor_username,
-          r.role_name AS actor_role,
-          t.created_at AS occurred_at,
-          json_build_object('taskId', t.id, 'taskStatus', t.status) AS metadata
-        FROM assigned_tasks t
-        JOIN users u ON u.id = t.assigned_to
-        JOIN roles r ON r.id = u.role_id
-        WHERE t.assigned_to IS NOT NULL
-      ) activity
-      ORDER BY occurred_at DESC
+      SELECT
+        action AS type,
+        action AS title,
+        COALESCE(actor_name, 'System') AS actor_name,
+        COALESCE(actor_username, metadata->>'username', 'system') AS actor_username,
+        COALESCE(actor_role, 'System') AS actor_role,
+        entity_type,
+        entity_id,
+        target_user_id,
+        target_username,
+        details,
+        metadata,
+        ip_address::text AS ip_address,
+        user_agent,
+        created_at AS occurred_at
+      FROM user_logs
+      ORDER BY created_at DESC
       LIMIT $1
     `,
     [safeLimit],
@@ -252,29 +214,49 @@ async function updateUser(userId, payload) {
 
 async function deleteUser(userId) {
   console.log(`[userService] Starting deletion for user: ${userId}`);
+  const client = await db.pool.connect();
+
   try {
-    // 1. Manually remove from meeting_participants to be safe
-    console.log(`[userService] Deleting from meeting_participants...`);
-    await db.query('DELETE FROM meeting_participants WHERE user_id = $1', [userId]);
+    await client.query('BEGIN');
 
-    // 2. Remove any meetings where this user is the organizer
-    console.log(`[userService] Deleting from meetings (organizer)...`);
-    await db.query('DELETE FROM meetings WHERE organizer_id = $1', [userId]);
+    const existing = await client.query(
+      `
+        SELECT u.id, u.fullname, u.username, u.email, u.phone, u.role_id, r.role_name, u.status, u.created_at, u.updated_at
+        FROM users u
+        JOIN roles r ON r.id = u.role_id
+        WHERE u.id = $1
+      `,
+      [userId],
+    );
 
-    // 3. Delete the user
-    console.log(`[userService] Deleting from users...`);
-    const result = await db.query('DELETE FROM users WHERE id = $1 RETURNING id', [userId]);
-
-    if (result.rowCount === 0) {
+    if (existing.rowCount === 0) {
       console.log(`[userService] User not found: ${userId}`);
       throw new ApiError(404, 'User not found');
     }
 
+    const deletedUser = existing.rows[0];
+
+    console.log('[userService] Clearing user references...');
+    await client.query('DELETE FROM comments WHERE author_id = $1', [userId]);
+    await client.query('UPDATE meeting_minutes SET created_by = NULL WHERE created_by = $1', [userId]);
+    await client.query('UPDATE meeting_minutes_versions SET edited_by = NULL WHERE edited_by = $1', [userId]);
+    await client.query('UPDATE decisions SET made_by = NULL WHERE made_by = $1', [userId]);
+    await client.query('UPDATE assigned_tasks SET assigned_to = NULL WHERE assigned_to = $1', [userId]);
+    await client.query('DELETE FROM meeting_participants WHERE user_id = $1', [userId]);
+    await client.query('DELETE FROM meetings WHERE organizer_id = $1', [userId]);
+
+    console.log(`[userService] Deleting from users...`);
+    await client.query('DELETE FROM users WHERE id = $1', [userId]);
+    await client.query('COMMIT');
+
     console.log(`[userService] User deleted successfully: ${userId}`);
-    return true;
+    return deletedUser;
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error(`[userService] Error in deleteUser for ${userId}:`, err);
     throw err;
+  } finally {
+    client.release();
   }
 }
 

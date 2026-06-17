@@ -70,5 +70,6 @@ export const taskApi = {
 };
 export const authApi = {
   login: (credentials) => apiRequest('/auth/login', { method: 'POST', body: credentials }),
+  logout: () => apiRequest('/auth/logout', { method: 'POST' }),
   session: () => apiRequest('/auth/session')
 };

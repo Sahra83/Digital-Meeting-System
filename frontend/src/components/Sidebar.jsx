@@ -6,7 +6,6 @@ function Sidebar({ isOpen, onClose }) {
   const { user } = useAuth()
 
   const menuItems = [
-    // { name: 'Collaboration', path: '/dashboard/collaboration', icon: 'chat' },
     { name: 'Dashboard Overview', path: '/dashboard/overview', icon: 'dashboard' },
     { name: 'User Management', path: '/dashboard/users', icon: 'users' },
     { name: 'Meeting Schedule', path: '/dashboard/meetings', icon: 'calendar' },
