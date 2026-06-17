@@ -6,10 +6,69 @@ const typeLabels = {
   login_success: 'Login successful',
   login_failed: 'Login failed',
   logout: 'Logout',
+  meeting_created: 'Meeting created',
+  meeting_updated: 'Meeting updated',
+  meeting_deleted: 'Meeting deleted',
+  minutes_created: 'Meeting minutes created',
+  minutes_updated: 'Meeting minutes updated',
+  minutes_sent: 'Meeting minutes sent',
+  minutes_restored: 'Meeting minutes restored',
+  task_started: 'Task started',
+  task_submitted: 'Task submitted',
+  task_approved: 'Task approved',
+  task_rejected: 'Task rejected',
+  task_email_resent: 'Task email resent',
+  comment_added: 'Comment added',
+  comment_updated: 'Comment updated',
+  comment_deleted: 'Comment deleted',
   user_created: 'User created',
   user_updated: 'Profile updated',
   user_deleted: 'User deleted',
   profile_updated: 'Profile updated',
+}
+
+function getReadableApiAction(log) {
+  const rawPath = log.metadata?.path || log.details || ''
+  const methodMatch = rawPath.match(/^(GET|POST|PUT|PATCH|DELETE)\s+/)
+  const method = log.metadata?.method || methodMatch?.[1] || log.type?.replace('api_', '')?.toUpperCase()
+  const path = rawPath
+    .replace(/^(GET|POST|PUT|PATCH|DELETE)\s+/, '')
+    .replace(/^\/api(?:\/v1)?/, '')
+    .replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '/:id')
+
+  const actions = {
+    'POST /meetings': 'Meeting created',
+    'PUT /meetings/:id': 'Meeting updated',
+    'DELETE /meetings/:id': 'Meeting deleted',
+    'POST /meetings/:id/minutes': 'Meeting minutes created',
+    'PUT /meetings/:id/minutes': 'Meeting minutes updated',
+    'POST /meetings/:id/minutes/notify': 'Meeting minutes sent',
+    'POST /meetings/:id/minutes/versions/:id/restore': 'Meeting minutes restored',
+    'POST /participant/tasks/:id/submit': 'Task submitted',
+    'PATCH /participant/tasks/:id/start': 'Task started',
+    'PATCH /organizer/tasks/:id/approve': 'Task approved',
+    'PATCH /organizer/tasks/:id/reject': 'Task rejected',
+    'POST /tasks/:id/resend-email': 'Task email resent',
+    'POST /collaboration/comments': 'Comment added',
+    'PUT /collaboration/comments/:id': 'Comment updated',
+    'DELETE /collaboration/comments/:id': 'Comment deleted',
+  }
+
+  return actions[`${method} ${path}`] || typeLabels[log.type] || log.title?.replace(/_/g, ' ')
+}
+
+function getLogTitle(log) {
+  if (log.type?.startsWith('api_')) return getReadableApiAction(log)
+  return typeLabels[log.type] || log.title?.replace(/_/g, ' ')
+}
+
+function getLogDetails(log) {
+  if (log.type?.startsWith('api_')) return ''
+  return log.details || ''
+}
+
+function getActorText(log) {
+  return `${log.actor_name || 'System'} @${log.actor_username || 'system'} - ${log.actor_role || 'System'}`
 }
 
 function formatDate(value) {
@@ -72,15 +131,16 @@ function UserLogs() {
                 <Icon name={log.type?.includes('login') || log.type === 'logout' ? 'history' : 'user'} className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <p className="font-semibold text-slate-900">{typeLabels[log.type] || log.title}</p>
-                <p className="mt-1 truncate text-sm text-slate-500">
+                <p className="font-semibold text-slate-900">{getLogTitle(log)}</p>
+                <p className="mt-1 truncate text-sm text-slate-500">{getActorText(log)}</p>
+                <p className="hidden">
                   {log.actor_name} @{log.actor_username} · {log.actor_role}
                 </p>
                 {log.metadata?.meetingTitle && (
                   <p className="mt-1 text-sm text-slate-600">{log.metadata.meetingTitle}</p>
                 )}
-                {log.details && (
-                  <p className="mt-1 text-sm text-slate-600">{log.details}</p>
+                {getLogDetails(log) && (
+                  <p className="mt-1 text-sm text-slate-600">{getLogDetails(log)}</p>
                 )}
                 {(log.target_username || log.ip_address) && (
                   <p className="mt-1 text-xs text-slate-500">

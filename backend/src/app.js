@@ -16,6 +16,44 @@ app.use(cors({
 app.use(morgan('dev'));
 app.use(express.json());
 
+function getAuditAction(method, originalUrl) {
+  const cleanPath = (originalUrl || '').split('?')[0].replace(/^\/api(?:\/v1)?/, '') || '/';
+  const route = cleanPath.replace(
+    /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+    '/:id',
+  );
+
+  const actions = {
+    'POST /meetings': ['meeting_created', 'Meeting created', 'meeting'],
+    'PUT /meetings/:id': ['meeting_updated', 'Meeting updated', 'meeting'],
+    'DELETE /meetings/:id': ['meeting_deleted', 'Meeting deleted', 'meeting'],
+    'POST /meetings/:id/minutes': ['minutes_created', 'Meeting minutes created', 'meeting_minutes'],
+    'PUT /meetings/:id/minutes': ['minutes_updated', 'Meeting minutes updated', 'meeting_minutes'],
+    'POST /meetings/:id/minutes/notify': ['minutes_sent', 'Meeting minutes sent', 'meeting_minutes'],
+    'POST /meetings/:id/minutes/versions/:id/restore': ['minutes_restored', 'Meeting minutes restored', 'meeting_minutes'],
+    'POST /participant/tasks/:id/submit': ['task_submitted', 'Task submitted', 'task'],
+    'PATCH /participant/tasks/:id/start': ['task_started', 'Task started', 'task'],
+    'PATCH /organizer/tasks/:id/approve': ['task_approved', 'Task approved', 'task'],
+    'PATCH /organizer/tasks/:id/reject': ['task_rejected', 'Task rejected', 'task'],
+    'POST /tasks/:id/resend-email': ['task_email_resent', 'Task email resent', 'task'],
+    'POST /collaboration/comments': ['comment_added', 'Comment added', 'comment'],
+    'PUT /collaboration/comments/:id': ['comment_updated', 'Comment updated', 'comment'],
+    'DELETE /collaboration/comments/:id': ['comment_deleted', 'Comment deleted', 'comment'],
+  };
+
+  const fallbackVerb = {
+    POST: 'Created',
+    PUT: 'Updated',
+    PATCH: 'Updated',
+    DELETE: 'Deleted',
+  };
+  const fallbackAction = `${method.toLowerCase()}_${route.split('/')[1] || 'record'}`;
+  const fallbackDetails = `${fallbackVerb[method] || method} ${(route.split('/')[1] || 'record').replace(/-/g, ' ')}`;
+  const [action, details, entityType] = actions[`${method} ${route}`] || [fallbackAction, fallbackDetails, 'api_request'];
+
+  return { action, details, entityType, path: cleanPath };
+}
+
 app.use((req, res, next) => {
   const method = req.method.toUpperCase();
   const shouldAudit = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
@@ -27,12 +65,13 @@ app.use((req, res, next) => {
   if (shouldAudit && !hasDetailedLog) {
     res.on('finish', () => {
       if (req.user && res.statusCode < 400) {
+        const auditAction = getAuditAction(method, path);
         recordUserLog({
           actor: req.user,
-          action: `api_${method.toLowerCase()}`,
-          entityType: 'api_request',
-          details: `${method} ${path}`,
-          metadata: { statusCode: res.statusCode },
+          action: auditAction.action,
+          entityType: auditAction.entityType,
+          details: auditAction.details,
+          metadata: { method, path: auditAction.path, statusCode: res.statusCode },
           req,
         });
       }
