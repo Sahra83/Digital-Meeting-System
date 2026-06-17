@@ -96,12 +96,23 @@ function UserManagement() {
 
   const handleDeleteClick = (user) => {
     setPendingDelete(user)
-    showAlert('danger', 'Confirm Delete', `Are you sure you want to delete this user: ${user.username}?\n\nThis action cannot be undone.`, confirmDelete, 'Delete User', 'No')
+    showAlert(
+      'danger',
+      'Confirm Delete',
+      `Are you sure you want to delete this user: ${user.username}?\n\nThis action cannot be undone.`,
+      () => confirmDelete(user),
+      'Delete User',
+      'No'
+    )
   }
 
-  async function confirmDelete() {
-    if (!pendingDelete) return
-    const userId = pendingDelete.id
+  async function confirmDelete(userToDelete = pendingDelete) {
+    if (!userToDelete) {
+      showAlert('error', 'Delete Failed', 'No user was selected for deletion.')
+      return
+    }
+
+    const userId = userToDelete.id
     console.log('[Frontend] confirmDelete started for user:', userId)
     
     setIsAlertLoading(true)
