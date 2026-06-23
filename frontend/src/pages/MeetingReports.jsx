@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Icon from '../components/Icon'
 import { meetingApi } from '../services/api'
-import { PieChart, BarChart } from '../components/Charts'
+import { PieChart, BarChart, LineChart } from '../components/Charts'
 
 function formatDate(value) {
   return value ? new Date(value).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : 'Not set'
@@ -24,6 +24,7 @@ function MeetingReports() {
     organizer: '',
     project: '',
     participant: '',
+    status: '',
   })
   const [loading, setLoading] = useState(true)
   const [reportLoading, setReportLoading] = useState(false)
@@ -103,23 +104,21 @@ function MeetingReports() {
 
   const stats = dashboard?.stats || {}
   const cards = [
-    { label: 'Scheduled', value: stats.scheduled_meetings || 0, icon: 'calendar', color: 'from-blue-500 to-indigo-600' },
-    { label: 'Completed', value: stats.completed_meetings || 0, icon: 'check', color: 'from-emerald-500 to-teal-600' },
-    { label: 'Pending Actions', value: stats.pending_action_items || 0, icon: 'tasks', color: 'from-amber-500 to-orange-500' },
-    { label: 'Reports', value: stats.meetings_with_minutes || 0, icon: 'minutes', color: 'from-slate-700 to-slate-900' },
+    { label: 'Total Meetings', value: stats.total_meetings || 0, icon: 'dashboard', color: 'from-blue-600 to-indigo-600' },
+    { label: 'Completed Meetings', value: stats.completed_meetings || 0, icon: 'check', color: 'from-emerald-500 to-teal-600' },
+    { label: 'Action Items (Pending)', value: stats.pending_action_items || 0, icon: 'tasks', color: 'from-amber-500 to-orange-500' },
+    { label: 'Reports Available', value: stats.meetings_with_minutes || 0, icon: 'minutes', color: 'from-slate-700 to-slate-900' },
   ]
 
-  const organizerData = (dashboard?.meetingsByOrganizer || []).map(org => ({
-    label: org.organizer_name.split(' ')[0],
-    value: org.meeting_count
-  }));
+  const meetingTaskComparison = dashboard?.meetingTaskComparison || [];
   
-  const colors = { scheduled: '#3b82f6', completed: '#10b981', canceled: '#ef4444' };
-  const statusData = (dashboard?.statusDistribution || []).map(s => ({
-    label: s.label.charAt(0).toUpperCase() + s.label.slice(1),
-    value: s.value,
-    color: colors[s.label.toLowerCase()] || '#94a3b8'
-  })).filter(d => d.value > 0);
+  const timelineData = (dashboard?.completionTrend || []).map(t => ({
+    label: new Date(t.label).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+    value: t.value
+  })).reverse();
+  
+  if (timelineData.length === 1) timelineData.unshift({ label: 'Past', value: 0 });
+  if (timelineData.length === 0) timelineData.push({label: 'No Data', value: 0}, {label: 'Now', value: 0});
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -148,15 +147,22 @@ function MeetingReports() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
-          <h2 className="text-lg font-bold text-slate-900 mb-6">Meetings by Organizer</h2>
+          <h2 className="text-lg font-bold text-slate-900 mb-6">Completion Trend Over Time</h2>
           <div className="flex-1 flex items-end">
-            <BarChart data={organizerData} />
+            <LineChart data={timelineData} />
           </div>
         </div>
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
-          <h2 className="text-lg font-bold text-slate-900 mb-6">Meeting Status Distribution</h2>
-          <div className="flex-1 flex items-center justify-center">
-            <PieChart data={statusData.length ? statusData : [{label: 'No Data', value: 1, color: '#e2e8f0'}]} />
+          <h2 className="text-lg font-bold text-slate-900 mb-6">Task Completion (%) by Meeting</h2>
+          <div className="flex-1 flex items-end">
+            {meetingTaskComparison.length > 0 ? (
+              <BarChart data={meetingTaskComparison.map(m => {
+                const completedPct = m.total_tasks > 0 ? Math.round((m.completed_tasks / m.total_tasks) * 100) : 0;
+                return { label: m.meeting_title.split(' ').slice(0, 2).join(' '), value: completedPct };
+              })} />
+            ) : (
+              <div className="flex w-full h-32 items-center justify-center text-slate-400 text-sm italic">No meeting tasks available</div>
+            )}
           </div>
         </div>
       </div>
@@ -170,6 +176,12 @@ function MeetingReports() {
           <input className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-blue-600 focus:bg-white" placeholder="Organizer" value={filters.organizer} onChange={(e) => updateFilter('organizer', e.target.value)} />
           <input className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-blue-600 focus:bg-white" placeholder="Project" value={filters.project} onChange={(e) => updateFilter('project', e.target.value)} />
           <input className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-blue-600 focus:bg-white" placeholder="Participant" value={filters.participant} onChange={(e) => updateFilter('participant', e.target.value)} />
+          <select className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-blue-600 focus:bg-white" value={filters.status} onChange={(e) => updateFilter('status', e.target.value)}>
+            <option value="">All Statuses</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="completed">Completed</option>
+            <option value="canceled">Canceled</option>
+          </select>
         </div>
       </section>
 
