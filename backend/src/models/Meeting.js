@@ -164,13 +164,20 @@ class Meeting {
 
     const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    const [statsResult, upcomingResult, completedResult, tasksResult, organizerResult, trendResult, statusResult] = await Promise.all([
+    const [
+      statsResult, 
+      upcomingResult, 
+      meetingTaskComparisonResult, 
+      topParticipantsResult, 
+      delinquentMeetingsResult
+    ] = await Promise.all([
       pool.query(
         `
           SELECT
             COUNT(DISTINCT m.id)::int AS total_meetings,
             COUNT(DISTINCT m.id) FILTER (WHERE m.status ILIKE 'scheduled')::int AS scheduled_meetings,
-            COUNT(DISTINCT m.id) FILTER (WHERE m.status ILIKE 'completed')::int AS completed_meetings,
+            COUNT(DISTINCT m.id) FILTER (WHERE m.status ILIKE 'scheduled' AND m.meeting_date < CURRENT_DATE)::int AS scheduled_past_meetings,
+            COUNT(DISTINCT m.id) FILTER (WHERE m.meeting_date BETWEEN CURRENT_DATE AND CURRENT_DATE + 3)::int AS closing_soon_meetings,
             COUNT(DISTINCT mm.id)::int AS meetings_with_minutes,
             COUNT(DISTINCT at.id) FILTER (WHERE COALESCE(at.status, 'pending') = 'pending')::int AS pending_action_items,
             COUNT(DISTINCT at.id)::int AS total_action_items,
@@ -188,58 +195,57 @@ class Meeting {
           SELECT m.id, m.title, m.meeting_date, m.meeting_time, m.location, m.status, u.fullname AS organizer_name
           FROM meetings m
           JOIN users u ON u.id = m.organizer_id
-          WHERE m.status ILIKE 'scheduled'
+          WHERE m.status ILIKE 'scheduled' AND m.meeting_date >= CURRENT_DATE
           ORDER BY m.meeting_date ASC, m.meeting_time ASC
           LIMIT 6
         `
       ),
       pool.query(
         `
-          SELECT m.id, m.title, m.meeting_date, m.meeting_time, m.status, u.fullname AS organizer_name
+          SELECT 
+            m.title AS meeting_title, 
+            COUNT(at.id)::int AS total_tasks,
+            COUNT(at.id) FILTER (WHERE at.status IN ('completed', 'approved', 'submitted'))::int AS completed_tasks,
+            COUNT(at.id) FILTER (WHERE COALESCE(at.status, 'pending') IN ('pending', 'in_progress', 'rejected'))::int AS pending_tasks
           FROM meetings m
-          JOIN users u ON u.id = m.organizer_id
-          WHERE m.status ILIKE 'completed'
-          ORDER BY m.meeting_date DESC, m.meeting_time DESC
-          LIMIT 6
-        `
-      ),
-      pool.query(
-        `
-          SELECT at.id, at.task_description, at.deadline, at.status, assignee.fullname AS assigned_to_name, m.title AS meeting_title
-          FROM assigned_tasks at
-          JOIN meeting_minutes mm ON mm.id = at.minutes_id
-          JOIN meetings m ON m.id = mm.meeting_id
-          LEFT JOIN users assignee ON assignee.id = at.assigned_to
-          WHERE COALESCE(at.status, 'pending') = 'pending'
-          ORDER BY at.deadline NULLS LAST, at.created_at DESC
+          LEFT JOIN meeting_minutes mm ON mm.meeting_id = m.id
+          LEFT JOIN assigned_tasks at ON at.minutes_id = mm.id
+          GROUP BY m.id, m.title
+          ORDER BY m.meeting_date DESC
           LIMIT 8
         `
       ),
       pool.query(
         `
-          SELECT u.fullname AS organizer_name, COUNT(DISTINCT m.id)::int AS meeting_count
-          FROM meetings m
-          JOIN users u ON u.id = m.organizer_id
-          GROUP BY u.fullname
-          ORDER BY meeting_count DESC, u.fullname
+          SELECT 
+            u.fullname AS participant_name,
+            COUNT(DISTINCT m.id)::int AS meetings_attended,
+            COUNT(at.id)::int AS tasks_assigned,
+            COUNT(at.id) FILTER (WHERE at.status IN ('completed', 'approved', 'submitted'))::int AS tasks_completed,
+            COUNT(at.id) FILTER (WHERE COALESCE(at.status, 'pending') IN ('pending', 'in_progress', 'rejected'))::int AS tasks_pending
+          FROM users u
+          JOIN meeting_participants mp ON mp.user_id = u.id
+          JOIN meetings m ON m.id = mp.meeting_id
+          LEFT JOIN meeting_minutes mm ON mm.meeting_id = m.id
+          LEFT JOIN assigned_tasks at ON at.minutes_id = mm.id AND at.assigned_to = u.id
+          GROUP BY u.id, u.fullname
+          ORDER BY tasks_assigned DESC, meetings_attended DESC
           LIMIT 6
         `
       ),
       pool.query(
         `
-          SELECT meeting_date::text AS label, COUNT(id)::int AS value 
-          FROM meetings 
-          WHERE status ILIKE 'completed' 
-          GROUP BY meeting_date 
-          ORDER BY meeting_date DESC 
-          LIMIT 7
-        `
-      ),
-      pool.query(
-        `
-          SELECT COALESCE(status, 'scheduled') AS label, COUNT(id)::int AS value 
-          FROM meetings 
-          GROUP BY status
+          SELECT 
+            m.id, m.title, m.meeting_date,
+            COUNT(at.id)::int AS total_tasks,
+            COUNT(at.id) FILTER (WHERE COALESCE(at.status, 'pending') IN ('pending', 'in_progress', 'rejected'))::int AS pending_tasks
+          FROM meetings m
+          JOIN meeting_minutes mm ON mm.meeting_id = m.id
+          JOIN assigned_tasks at ON at.minutes_id = mm.id
+          GROUP BY m.id, m.title, m.meeting_date
+          HAVING COUNT(at.id) FILTER (WHERE COALESCE(at.status, 'pending') IN ('pending', 'in_progress', 'rejected')) > 0
+          ORDER BY pending_tasks DESC, m.meeting_date DESC
+          LIMIT 6
         `
       )
     ]);
@@ -247,11 +253,9 @@ class Meeting {
     return {
       stats: statsResult.rows[0],
       upcomingMeetings: upcomingResult.rows,
-      completedMeetings: completedResult.rows,
-      pendingActionItems: tasksResult.rows,
-      meetingsByOrganizer: organizerResult.rows,
-      completionTrend: trendResult.rows,
-      statusDistribution: statusResult.rows
+      meetingTaskComparison: meetingTaskComparisonResult.rows,
+      topParticipants: topParticipantsResult.rows,
+      delinquentMeetings: delinquentMeetingsResult.rows
     };
   }
 

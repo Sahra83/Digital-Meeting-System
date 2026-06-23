@@ -3,11 +3,6 @@ import { Link } from 'react-router-dom'
 import Icon from '../components/Icon'
 import { useAuth } from '../hooks/useAuth'
 import { meetingApi } from '../services/api'
-import { PieChart, BarChart, LineChart } from '../components/Charts'
-
-function formatDate(value) {
-  return value ? new Date(value).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : 'Not set'
-}
 
 function formatTime(value) {
   if (!value) return '';
@@ -45,32 +40,18 @@ function Dashboard() {
   const summary = dashboard?.stats || {}
   const stats = [
     { label: 'Total Users', value: summary.total_users ?? 0, icon: 'users', color: 'from-blue-600 to-indigo-600', note: `${summary.active_users ?? 0} active` },
-    { label: 'Scheduled Meetings', value: summary.scheduled_meetings ?? 0, icon: 'calendar', color: 'from-emerald-500 to-teal-600', note: 'upcoming' },
-    { label: 'Completed Meetings', value: summary.completed_meetings ?? 0, icon: 'check', color: 'from-slate-700 to-slate-900', note: 'finished' },
-    { label: 'Pending Actions', value: summary.pending_action_items ?? 0, icon: 'tasks', color: 'from-amber-500 to-orange-600', note: `${summary.total_action_items ?? 0} total` },
+    { label: 'Scheduled Meetings', value: summary.scheduled_meetings ?? 0, icon: 'calendar', color: 'from-emerald-500 to-teal-600', note: 'total upcoming' },
+    { label: 'Past Scheduled', value: summary.scheduled_past_meetings ?? 0, icon: 'check', color: 'from-slate-700 to-slate-900', note: 'date finished' },
+    { label: 'Closing Soon', value: summary.closing_soon_meetings ?? 0, icon: 'tasks', color: 'from-amber-500 to-orange-600', note: 'next 3 days' },
   ]
 
-  const taskStatusData = [
-    { label: 'Pending', value: summary.pending_action_items ?? 0, color: '#f59e0b' },
-    { label: 'Completed', value: Math.max(0, (summary.total_action_items ?? 0) - (summary.pending_action_items ?? 0)), color: '#10b981' }
-  ];
-
-  const organizerData = (dashboard?.meetingsByOrganizer || []).map(org => ({
-    label: org.organizer_name.split(' ')[0],
-    value: org.meeting_count
-  }));
-
-  // Line chart using exact trend data from backend
-  const timelineData = (dashboard?.completionTrend || []).map(t => ({
-    label: new Date(t.label).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-    value: t.value
-  })).reverse();
-  
-  if (timelineData.length === 1) timelineData.unshift({ label: 'Past', value: 0 });
-  if (timelineData.length === 0) timelineData.push({label: 'No Data', value: 0}, {label: 'Now', value: 0});
+  const meetingTaskComparison = dashboard?.meetingTaskComparison || [];
+  const topParticipants = dashboard?.topParticipants || [];
+  const delinquentMeetings = dashboard?.delinquentMeetings || [];
+  const upcomingMeetings = dashboard?.upcomingMeetings || [];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-10">
       <div className="relative overflow-hidden rounded-3xl bg-slate-950 px-8 py-10 text-white shadow-2xl">
         <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-600 blur-[80px] opacity-40 mix-blend-screen pointer-events-none"></div>
         <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-emerald-500 blur-[80px] opacity-20 mix-blend-screen pointer-events-none"></div>
@@ -111,93 +92,127 @@ function Dashboard() {
         ))}
       </div>
 
-      {/* Analytics Row */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
-          <h2 className="text-lg font-bold text-slate-900 mb-6">Task Completion</h2>
-          <div className="flex-1 flex items-center justify-center">
-            <PieChart data={taskStatusData} />
-          </div>
+      {/* Big Chart: Meeting Task Comparison */}
+      <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
+        <h2 className="text-xl font-black text-slate-900 mb-6">Meeting Task Completion Comparison</h2>
+        <div className="flex-1 space-y-5">
+          {meetingTaskComparison.length > 0 ? meetingTaskComparison.map((m, idx) => {
+            const completedPct = m.total_tasks > 0 ? Math.round((m.completed_tasks / m.total_tasks) * 100) : 0;
+            const pendingPct = m.total_tasks > 0 ? 100 - completedPct : 0;
+            return (
+              <div key={idx} className="flex flex-col gap-2">
+                <div className="flex justify-between items-end">
+                  <span className="text-sm font-bold text-slate-700 truncate mr-4">{m.meeting_title}</span>
+                  <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">{m.total_tasks} Total Tasks</span>
+                </div>
+                <div className="flex h-5 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div className="bg-emerald-500 transition-all duration-1000 flex items-center justify-center" style={{ width: `${completedPct}%` }}>
+                    {completedPct > 10 && <span className="text-[10px] font-bold text-white">{completedPct}% Completed</span>}
+                  </div>
+                  <div className="bg-amber-400 transition-all duration-1000 flex items-center justify-center" style={{ width: `${pendingPct}%` }}>
+                    {pendingPct > 10 && <span className="text-[10px] font-bold text-white">{pendingPct}% Not Completed</span>}
+                  </div>
+                </div>
+              </div>
+            );
+          }) : (
+            <div className="flex h-32 items-center justify-center text-slate-400 text-sm italic">No meeting tasks available</div>
+          )}
         </div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
-          <h2 className="text-lg font-bold text-slate-900 mb-6">Meetings by Organizer</h2>
-          <div className="flex-1 flex items-end">
-            <BarChart data={organizerData} />
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Top Participants Analytics */}
+        <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
+          <h2 className="text-lg font-bold text-slate-900 mb-6">Top Participants Task Performance</h2>
+          <div className="flex-1 space-y-6">
+            {topParticipants.length > 0 ? topParticipants.map((p, idx) => {
+              const compPct = p.tasks_assigned > 0 ? Math.round((p.tasks_completed / p.tasks_assigned) * 100) : 0;
+              const pendPct = p.tasks_assigned > 0 ? 100 - compPct : 0;
+              return (
+                <div key={idx} className="relative">
+                  <div className="flex justify-between items-end mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700">{p.participant_name.charAt(0)}</div>
+                      <span className="text-sm font-bold text-slate-800">{p.participant_name}</span>
+                    </div>
+                    <span className="text-xs font-semibold text-slate-500">{p.meetings_attended} meetings</span>
+                  </div>
+                  <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-100 mb-1">
+                    <div className="bg-emerald-500 transition-all duration-1000" style={{ width: `${compPct}%` }} title={`Completed: ${p.tasks_completed}`}></div>
+                    <div className="bg-rose-500 transition-all duration-1000" style={{ width: `${pendPct}%` }} title={`Not Submitted: ${p.tasks_pending}`}></div>
+                  </div>
+                  <div className="flex justify-between text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span>{p.tasks_completed} Submitted</span>
+                    <span>{p.tasks_pending} Not Submitted</span>
+                  </div>
+                </div>
+              );
+            }) : (
+              <div className="flex h-32 items-center justify-center text-slate-400 text-sm italic">No participants data available</div>
+            )}
           </div>
-        </div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
-          <h2 className="text-lg font-bold text-slate-900 mb-6">Recent Completion Trend</h2>
-          <div className="flex-1 flex items-end">
-            <LineChart data={timelineData} />
+        </section>
+
+        {/* Meeting Task Delinquency List */}
+        <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
+          <h2 className="text-lg font-bold text-slate-900 mb-1">Highest Pending Tasks</h2>
+          <p className="text-xs text-slate-500 mb-5">Meetings where participants have not submitted their tasks.</p>
+          <div className="flex-1 space-y-3 overflow-y-auto pr-2 custom-scrollbar">
+            {delinquentMeetings.length > 0 ? delinquentMeetings.map((m) => {
+              const delinquentPct = Math.round((m.pending_tasks / m.total_tasks) * 100);
+              return (
+                <div key={m.id} className="group flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-4 hover:border-red-200 hover:bg-red-50/30 transition-colors">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 group-hover:text-red-900 transition-colors">{m.title}</h3>
+                    <p className="mt-1 text-xs text-slate-500">{new Date(m.meeting_date).toLocaleDateString()}</p>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-lg font-black text-rose-600">{m.pending_tasks} <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pending</span></span>
+                    <span className="text-[10px] font-bold text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200 mt-1">{delinquentPct}% of total</span>
+                  </div>
+                </div>
+              );
+            }) : (
+              <div className="flex h-32 items-center justify-center text-slate-400 text-sm italic">No delinquent meetings</div>
+            )}
           </div>
-        </div>
+        </section>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-2 xl:grid-cols-3">
-        <Panel title="Upcoming Meetings" items={dashboard?.upcomingMeetings || []} renderItem={(meeting) => (
-          <div className="flex items-start gap-4">
-            <div className="flex flex-col items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 p-2 min-w-[3.5rem]">
-              <span className="text-xs font-bold uppercase">{new Date(meeting.meeting_date).toLocaleDateString(undefined, { month: 'short' })}</span>
-              <span className="text-lg font-black">{new Date(meeting.meeting_date).getDate()}</span>
+      {/* Upcoming Meetings List */}
+      <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-lg font-bold text-slate-900">Upcoming Scheduled Meetings</h2>
+          <span className="inline-flex items-center justify-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+            {upcomingMeetings.length}
+          </span>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {upcomingMeetings.length ? upcomingMeetings.map((meeting) => (
+            <div key={meeting.id} className="flex items-start gap-4 rounded-xl border border-slate-100 bg-slate-50/50 p-4 transition-colors hover:bg-slate-50">
+              <div className="flex flex-col items-center justify-center rounded-lg bg-blue-50 text-blue-700 p-2 min-w-[3.5rem] shrink-0 border border-blue-100">
+                <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">{new Date(meeting.meeting_date).toLocaleDateString(undefined, { month: 'short' })}</span>
+                <span className="text-lg font-black leading-none mt-1">{new Date(meeting.meeting_date).getDate()}</span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-slate-900 truncate">{meeting.title}</p>
+                <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                  <Icon name="calendar" className="h-3 w-3" /> {formatTime(meeting.meeting_time)}
+                </div>
+                <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+                  <Icon name="users" className="h-3 w-3" /> {meeting.organizer_name}
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-bold text-slate-900 line-clamp-1">{meeting.title}</p>
-              <p className="mt-1 text-xs text-slate-500 font-medium">{formatTime(meeting.meeting_time)} • {meeting.location}</p>
-              <p className="mt-1 text-xs text-slate-400">Org: {meeting.organizer_name}</p>
+          )) : (
+            <div className="col-span-full flex h-32 items-center justify-center text-slate-400 text-sm italic border border-dashed rounded-xl border-slate-200">
+              No upcoming meetings scheduled.
             </div>
-          </div>
-        )} />
-
-        <Panel title="Pending Action Items" items={dashboard?.pendingActionItems || []} renderItem={(task) => (
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-amber-500 bg-amber-50 text-amber-500">
-              <Icon name="tasks" className="h-3 w-3" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-slate-900">{task.task_description}</p>
-              <p className="mt-1 text-xs font-medium text-amber-600">Due: {task.deadline ? new Date(task.deadline).toLocaleDateString() : 'No deadline'}</p>
-              <p className="mt-1 text-xs text-slate-500">{task.assigned_to_name || 'Unassigned'} • {task.meeting_title}</p>
-            </div>
-          </div>
-        )} />
-
-        <Panel className="xl:col-span-1 lg:col-span-2" title="Recently Completed" items={dashboard?.completedMeetings || []} renderItem={(meeting) => (
-          <div className="flex items-center gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-              <Icon name="check" className="h-5 w-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-slate-900 truncate">{meeting.title}</p>
-              <p className="mt-0.5 text-xs text-slate-500">{formatDate(meeting.meeting_date)}</p>
-            </div>
-          </div>
-        )} />
-      </div>
+          )}
+        </div>
+      </section>
     </div>
-  )
-}
-
-function Panel({ title, items, renderItem, className = "" }) {
-  return (
-    <section className={`rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col ${className}`}>
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-lg font-bold text-slate-900">{title}</h2>
-        <span className="inline-flex items-center justify-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
-          {items.length}
-        </span>
-      </div>
-      <div className="flex-1 space-y-3 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
-        {items.length ? items.map((item) => (
-          <div key={item.id} className="rounded-xl border border-slate-50 bg-slate-50/50 p-4 transition-colors hover:bg-slate-50">
-            {renderItem(item)}
-          </div>
-        )) : (
-          <div className="flex h-full min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-center">
-            <p className="text-sm text-slate-500 font-medium">Nothing to show yet.</p>
-          </div>
-        )}
-      </div>
-    </section>
   )
 }
 

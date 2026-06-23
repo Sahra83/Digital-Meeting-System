@@ -141,6 +141,7 @@ export default function AssignedTasksPage() {
         </select>
       </div>
 
+
       {loading ? (
         <p>Loading tasks...</p>
       ) : (
@@ -155,7 +156,9 @@ export default function AssignedTasksPage() {
             </tr>
           </thead>
           <tbody>
-            {tasks.filter(task => task.status?.toLowerCase() !== 'completed' && task.status?.toLowerCase() !== 'approved').map(task => (
+            {tasks
+              .filter((t) => t.status === 'pending' || t.status === 'in_progress')
+              .map(task => (
               <tr key={task.id} className={rowStyle(task)}>
                 <td className="border px-4 py-2">{task.task_description}</td>
                 <td className="border px-4 py-2">{task.assigned_to_name || 'Unassigned'}</td>
