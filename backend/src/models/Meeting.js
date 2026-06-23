@@ -134,7 +134,7 @@ class Meeting {
 
     if (status) {
       params.push(status);
-      conditions.push(`m.status = $${params.length}`);
+      conditions.push(`m.status ILIKE $${params.length}`);
     }
 
     if (conditions.length > 0) {

@@ -168,7 +168,7 @@ function MeetingReports() {
       </div>
 
       <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Advanced Filters</h2>
+        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4"> Filter meetings</h2>
         <div className="grid gap-4 md:grid-cols-3">
           <input className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-blue-600 focus:bg-white" placeholder="Search meetings" value={filters.search} onChange={(e) => updateFilter('search', e.target.value)} />
           <input className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-blue-600 focus:bg-white" placeholder="Project" value={filters.project} onChange={(e) => updateFilter('project', e.target.value)} />
