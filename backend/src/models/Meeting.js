@@ -133,8 +133,14 @@ class Meeting {
     }
 
     if (status) {
-      params.push(status);
-      conditions.push(`m.status ILIKE $${params.length}`);
+      if (status.toLowerCase() === 'upcoming') {
+        conditions.push(`m.meeting_date >= CURRENT_DATE AND m.status ILIKE 'scheduled'`);
+      } else if (status.toLowerCase() === 'completed') {
+        conditions.push(`(m.meeting_date < CURRENT_DATE OR m.status ILIKE 'completed')`);
+      } else {
+        params.push(status);
+        conditions.push(`m.status ILIKE $${params.length}`);
+      }
     }
 
     if (conditions.length > 0) {
@@ -285,7 +291,7 @@ class Meeting {
       topParticipants: topParticipantsResult.rows,
       delinquentMeetings: delinquentMeetingsResult.rows,
       statusDistribution: statusDistResult.rows,
-      distinctStatuses: distinctStatusResult.rows.map(r => r.status_value)
+      distinctStatuses: [...new Set(['upcoming', 'completed', ...distinctStatusResult.rows.map(r => r.status_value)])]
     };
   }
 

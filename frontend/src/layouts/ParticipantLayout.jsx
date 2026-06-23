@@ -21,24 +21,22 @@ function ParticipantLayout() {
 
   const menuItems = [
     { name: 'Dashboard Overview', path: '/participant/dashboard', icon: 'dashboard' },
-    { name: 'My Meetings', path: '/participant/meetings', icon: 'calendar' },
-    { name: 'My Tasks', path: '/participant/tasks', icon: 'tasks' },
+    { name: 'Scheduled Meetings', path: '/participant/meetings', icon: 'calendar' },
+    { name: 'Activities', path: '/participant/tasks', icon: 'tasks' },
     { name: 'Profile', path: '/participant/profile', icon: 'user' },
   ]
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-800">
       <div
-        className={`fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
-          sidebarOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
-        }`}
+        className={`fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${sidebarOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+          }`}
         onClick={() => setSidebarOpen(false)}
       />
 
       <aside
-        className={`fixed left-0 top-0 z-50 h-screen w-72 transform border-r border-slate-200 bg-white transition-transform duration-300 lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed left-0 top-0 z-50 h-screen w-72 transform border-r border-slate-200 bg-white transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         <div className="flex h-full flex-col">
           <div className="flex h-20 items-center gap-3 px-6">
@@ -59,10 +57,9 @@ function ParticipantLayout() {
                 to={item.path}
                 onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  `flex items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${isActive
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                   }`
                 }
               >
