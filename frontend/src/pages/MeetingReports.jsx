@@ -112,13 +112,12 @@ function MeetingReports() {
 
   const meetingTaskComparison = dashboard?.meetingTaskComparison || [];
   
-  const timelineData = (dashboard?.completionTrend || []).map(t => ({
-    label: new Date(t.label).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-    value: t.value
-  })).reverse();
-  
-  if (timelineData.length === 1) timelineData.unshift({ label: 'Past', value: 0 });
-  if (timelineData.length === 0) timelineData.push({label: 'No Data', value: 0}, {label: 'Now', value: 0});
+  const colors = { scheduled: '#3b82f6', completed: '#10b981', canceled: '#ef4444' };
+  const statusData = (dashboard?.statusDistribution || []).map(s => ({
+    label: s.label.charAt(0).toUpperCase() + s.label.slice(1),
+    value: s.value,
+    color: colors[s.label.toLowerCase()] || '#94a3b8'
+  })).filter(d => d.value > 0);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -147,9 +146,9 @@ function MeetingReports() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
-          <h2 className="text-lg font-bold text-slate-900 mb-6">Completion Trend Over Time</h2>
-          <div className="flex-1 flex items-end">
-            <LineChart data={timelineData} />
+          <h2 className="text-lg font-bold text-slate-900 mb-6">Meeting Status Distribution</h2>
+          <div className="flex-1 flex items-center justify-center">
+            <PieChart data={statusData.length ? statusData : [{label: 'No Data', value: 1, color: '#e2e8f0'}]} />
           </div>
         </div>
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
