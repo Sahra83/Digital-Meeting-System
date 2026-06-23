@@ -44,7 +44,7 @@ class OrganizerTaskController {
         JOIN meetings m ON mm.meeting_id = m.id
         JOIN users u ON t.assigned_to = u.id
         LEFT JOIN task_attachments ta ON ta.task_id = t.id
-        WHERE m.organizer_id = $1 AND t.status = 'submitted'
+        WHERE m.organizer_id = $1 AND t.status != 'pending'
         GROUP BY t.id, m.title, m.meeting_date, u.fullname, u.id
         ORDER BY t.created_at DESC;
       `;

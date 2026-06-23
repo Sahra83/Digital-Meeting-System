@@ -164,16 +164,16 @@ class Meeting {
 
     const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    const [statsResult, upcomingResult, completedResult, tasksResult, organizerResult] = await Promise.all([
+    const [statsResult, upcomingResult, completedResult, tasksResult, organizerResult, trendResult, statusResult] = await Promise.all([
       pool.query(
         `
           SELECT
-            COUNT(*)::int AS total_meetings,
-            COUNT(*) FILTER (WHERE m.status ILIKE 'scheduled')::int AS scheduled_meetings,
-            COUNT(*) FILTER (WHERE m.status ILIKE 'completed')::int AS completed_meetings,
+            COUNT(DISTINCT m.id)::int AS total_meetings,
+            COUNT(DISTINCT m.id) FILTER (WHERE m.status ILIKE 'scheduled')::int AS scheduled_meetings,
+            COUNT(DISTINCT m.id) FILTER (WHERE m.status ILIKE 'completed')::int AS completed_meetings,
             COUNT(DISTINCT mm.id)::int AS meetings_with_minutes,
-            COUNT(at.id) FILTER (WHERE COALESCE(at.status, 'pending') = 'pending')::int AS pending_action_items,
-            COUNT(at.id)::int AS total_action_items,
+            COUNT(DISTINCT at.id) FILTER (WHERE COALESCE(at.status, 'pending') = 'pending')::int AS pending_action_items,
+            COUNT(DISTINCT at.id)::int AS total_action_items,
             (SELECT COUNT(*)::int FROM users) AS total_users,
             (SELECT COUNT(*)::int FROM users WHERE status = 'active') AS active_users
           FROM meetings m
@@ -217,7 +217,7 @@ class Meeting {
       ),
       pool.query(
         `
-          SELECT u.fullname AS organizer_name, COUNT(m.id)::int AS meeting_count
+          SELECT u.fullname AS organizer_name, COUNT(DISTINCT m.id)::int AS meeting_count
           FROM meetings m
           JOIN users u ON u.id = m.organizer_id
           GROUP BY u.fullname
@@ -225,6 +225,23 @@ class Meeting {
           LIMIT 6
         `
       ),
+      pool.query(
+        `
+          SELECT meeting_date::text AS label, COUNT(id)::int AS value 
+          FROM meetings 
+          WHERE status ILIKE 'completed' 
+          GROUP BY meeting_date 
+          ORDER BY meeting_date DESC 
+          LIMIT 7
+        `
+      ),
+      pool.query(
+        `
+          SELECT COALESCE(status, 'scheduled') AS label, COUNT(id)::int AS value 
+          FROM meetings 
+          GROUP BY status
+        `
+      )
     ]);
 
     return {
@@ -233,6 +250,8 @@ class Meeting {
       completedMeetings: completedResult.rows,
       pendingActionItems: tasksResult.rows,
       meetingsByOrganizer: organizerResult.rows,
+      completionTrend: trendResult.rows,
+      statusDistribution: statusResult.rows
     };
   }
 

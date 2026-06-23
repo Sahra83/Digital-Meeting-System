@@ -60,15 +60,11 @@ function Dashboard() {
     value: org.meeting_count
   }));
 
-  // Line chart showing trend of completed meetings
-  const recentCompleted = (dashboard?.completedMeetings || []).slice().reverse();
-  const timelineData = recentCompleted.reduce((acc, m) => {
-    const d = new Date(m.meeting_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    const existing = acc.find(x => x.label === d);
-    if (existing) existing.value += 1;
-    else acc.push({ label: d, value: 1 });
-    return acc;
-  }, []);
+  // Line chart using exact trend data from backend
+  const timelineData = (dashboard?.completionTrend || []).map(t => ({
+    label: new Date(t.label).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+    value: t.value
+  })).reverse();
   
   if (timelineData.length === 1) timelineData.unshift({ label: 'Past', value: 0 });
   if (timelineData.length === 0) timelineData.push({label: 'No Data', value: 0}, {label: 'Now', value: 0});

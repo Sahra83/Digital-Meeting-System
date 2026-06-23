@@ -137,10 +137,18 @@ export default function SubmittedTasksPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => approveTask(task.id)} className="h-10 rounded-lg bg-emerald-700 px-4 text-sm font-semibold text-white hover:bg-emerald-800">Approve</button>
-                      <button onClick={() => setRejectingTask(task)} className="h-10 rounded-lg border border-red-300 px-4 text-sm font-semibold text-red-700 hover:bg-red-50">Reject</button>
-                    </div>
+                    {task.status === 'submitted' ? (
+                      <div className="flex gap-2 shrink-0">
+                        <button onClick={() => approveTask(task.id)} className="h-10 rounded-lg bg-emerald-700 px-4 text-sm font-semibold text-white hover:bg-emerald-800">Approve</button>
+                        <button onClick={() => setRejectingTask(task)} className="h-10 rounded-lg border border-red-300 px-4 text-sm font-semibold text-red-700 hover:bg-red-50">Reject</button>
+                      </div>
+                    ) : (
+                      <div className="flex items-start shrink-0">
+                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${task.status === 'completed' || task.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                          {task.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </article>
               ))}

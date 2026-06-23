@@ -114,10 +114,12 @@ function MeetingReports() {
     value: org.meeting_count
   }));
   
-  const statusData = [
-    { label: 'Scheduled', value: stats.scheduled_meetings || 0, color: '#3b82f6' },
-    { label: 'Completed', value: stats.completed_meetings || 0, color: '#10b981' }
-  ].filter(d => d.value > 0);
+  const colors = { scheduled: '#3b82f6', completed: '#10b981', canceled: '#ef4444' };
+  const statusData = (dashboard?.statusDistribution || []).map(s => ({
+    label: s.label.charAt(0).toUpperCase() + s.label.slice(1),
+    value: s.value,
+    color: colors[s.label.toLowerCase()] || '#94a3b8'
+  })).filter(d => d.value > 0);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -314,6 +316,15 @@ function ReportModal({ loading, meeting, minutes, onClose }) {
                     <TaskMetric label="Completed" value={taskStats.completed} color="emerald" />
                     <TaskMetric label="Pending" value={taskStats.pending} color="amber" />
                   </div>
+                </div>
+
+                <div className="mb-6">
+                  <PieChart data={[
+                    { label: 'Completed', value: taskStats.completed, color: '#10b981' },
+                    { label: 'Submitted', value: taskStats.submitted, color: '#3b82f6' },
+                    { label: 'Pending', value: taskStats.pending, color: '#f59e0b' },
+                    { label: 'Not Submitted', value: taskStats.notSubmitted, color: '#94a3b8' }
+                  ].filter(d => d.value > 0)} />
                 </div>
 
                 <div className="overflow-hidden rounded-xl border border-slate-100">
