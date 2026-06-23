@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Icon from '../components/Icon'
 import { useAuth } from '../hooks/useAuth'
 import { meetingApi } from '../services/api'
+import { BarChart, PieChart } from '../components/Charts'
 
 function formatTime(value) {
   if (!value) return '';
@@ -94,29 +95,15 @@ function Dashboard() {
 
       {/* Big Chart: Meeting Task Comparison */}
       <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
-        <h2 className="text-xl font-black text-slate-900 mb-6">Meeting Task Completion Comparison</h2>
-        <div className="flex-1 space-y-5">
-          {meetingTaskComparison.length > 0 ? meetingTaskComparison.map((m, idx) => {
-            const completedPct = m.total_tasks > 0 ? Math.round((m.completed_tasks / m.total_tasks) * 100) : 0;
-            const pendingPct = m.total_tasks > 0 ? 100 - completedPct : 0;
-            return (
-              <div key={idx} className="flex flex-col gap-2">
-                <div className="flex justify-between items-end">
-                  <span className="text-sm font-bold text-slate-700 truncate mr-4">{m.meeting_title}</span>
-                  <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">{m.total_tasks} Total Tasks</span>
-                </div>
-                <div className="flex h-5 w-full overflow-hidden rounded-full bg-slate-100">
-                  <div className="bg-emerald-500 transition-all duration-1000 flex items-center justify-center" style={{ width: `${completedPct}%` }}>
-                    {completedPct > 10 && <span className="text-[10px] font-bold text-white">{completedPct}% Completed</span>}
-                  </div>
-                  <div className="bg-amber-400 transition-all duration-1000 flex items-center justify-center" style={{ width: `${pendingPct}%` }}>
-                    {pendingPct > 10 && <span className="text-[10px] font-bold text-white">{pendingPct}% Not Completed</span>}
-                  </div>
-                </div>
-              </div>
-            );
-          }) : (
-            <div className="flex h-32 items-center justify-center text-slate-400 text-sm italic">No meeting tasks available</div>
+        <h2 className="text-xl font-black text-slate-900 mb-6">Meeting Task Completion Comparison (%)</h2>
+        <div className="flex-1 flex items-end">
+          {meetingTaskComparison.length > 0 ? (
+            <BarChart data={meetingTaskComparison.map(m => {
+              const completedPct = m.total_tasks > 0 ? Math.round((m.completed_tasks / m.total_tasks) * 100) : 0;
+              return { label: m.meeting_title.split(' ').slice(0, 2).join(' '), value: completedPct };
+            })} />
+          ) : (
+            <div className="flex w-full h-32 items-center justify-center text-slate-400 text-sm italic">No meeting tasks available</div>
           )}
         </div>
       </section>
@@ -124,31 +111,15 @@ function Dashboard() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Top Participants Analytics */}
         <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
-          <h2 className="text-lg font-bold text-slate-900 mb-6">Top Participants Task Performance</h2>
-          <div className="flex-1 space-y-6">
-            {topParticipants.length > 0 ? topParticipants.map((p, idx) => {
-              const compPct = p.tasks_assigned > 0 ? Math.round((p.tasks_completed / p.tasks_assigned) * 100) : 0;
-              const pendPct = p.tasks_assigned > 0 ? 100 - compPct : 0;
-              return (
-                <div key={idx} className="relative">
-                  <div className="flex justify-between items-end mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700">{p.participant_name.charAt(0)}</div>
-                      <span className="text-sm font-bold text-slate-800">{p.participant_name}</span>
-                    </div>
-                    <span className="text-xs font-semibold text-slate-500">{p.meetings_attended} meetings</span>
-                  </div>
-                  <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-100 mb-1">
-                    <div className="bg-emerald-500 transition-all duration-1000" style={{ width: `${compPct}%` }} title={`Completed: ${p.tasks_completed}`}></div>
-                    <div className="bg-rose-500 transition-all duration-1000" style={{ width: `${pendPct}%` }} title={`Not Submitted: ${p.tasks_pending}`}></div>
-                  </div>
-                  <div className="flex justify-between text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                    <span>{p.tasks_completed} Submitted</span>
-                    <span>{p.tasks_pending} Not Submitted</span>
-                  </div>
-                </div>
-              );
-            }) : (
+          <h2 className="text-lg font-bold text-slate-900 mb-6">Top Participants Task Performance (Completed)</h2>
+          <div className="flex-1 flex items-center justify-center">
+            {topParticipants.length > 0 ? (
+              <PieChart data={topParticipants.map((p, idx) => ({
+                label: p.participant_name.split(' ')[0],
+                value: p.tasks_completed,
+                color: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'][idx % 6]
+              })).filter(d => d.value > 0)} />
+            ) : (
               <div className="flex h-32 items-center justify-center text-slate-400 text-sm italic">No participants data available</div>
             )}
           </div>
