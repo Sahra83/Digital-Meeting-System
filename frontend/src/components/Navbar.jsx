@@ -23,7 +23,7 @@ function Navbar({ onOpenSidebar }) {
         </button>
 
         {/* Logo / Brand */}
-        <Link to="/" className="flex items-center gap-2.5 group transition-opacity hover:opacity-90">
+        <div className="flex items-center gap-2.5 group transition-opacity">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-500/20 transition-transform group-hover:scale-105">
             <Icon name="shield" className="h-6 w-6" />
           </div>
@@ -35,7 +35,7 @@ function Navbar({ onOpenSidebar }) {
               Collaboration
             </span>
           </div>
-        </Link>
+        </div>
       </div>
 
       <div className="flex items-center gap-3">

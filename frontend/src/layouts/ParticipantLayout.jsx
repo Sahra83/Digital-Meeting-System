@@ -40,14 +40,14 @@ function ParticipantLayout() {
       >
         <div className="flex h-full flex-col">
           <div className="flex h-20 items-center gap-3 px-6">
-            <Link to="/participant/dashboard" className="flex min-w-0 items-center gap-3" onClick={() => setSidebarOpen(false)}>
+            <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-700 text-white shadow-lg shadow-blue-700/30">
                 <Icon name="minutes" className="h-6 w-6" />
               </div>
               <div className="min-w-0">
                 <h2 className="truncate text-lg font-bold text-slate-950">Participant Portal</h2>
               </div>
-            </Link>
+            </div>
           </div>
 
           <nav className="flex-1 space-y-1.5 overflow-y-auto px-4 py-6">
