@@ -14,6 +14,7 @@ import Dashboard from './pages/Dashboard'
 import UserManagement from './pages/UserManagement'
 import MeetingManagement from './pages/MeetingManagement'
 import AssignedTasksPage from './components/AssignedTasksPage'
+import SubmittedTasksPage from './pages/SubmittedTasksPage'
 import MyTasks from './pages/MyTasks'
 import Collaboration from './pages/Collaboration'
 import MyMeetings from './pages/MyMeetings'
@@ -37,6 +38,7 @@ function App() {
             <Route path="/dashboard/profile" element={<Profile />} />
             <Route path="/dashboard/collaboration" element={<Collaboration />} />
             <Route path="/dashboard/tasks" element={<AssignedTasksPage />} />
+            <Route path="/dashboard/submitted-tasks" element={<SubmittedTasksPage />} />
           </Route>
         </Route>
         <Route element={<ProtectedParticipantRoute/>}>

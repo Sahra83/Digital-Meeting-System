@@ -10,6 +10,7 @@ function Sidebar({ isOpen, onClose }) {
     { name: 'User Management', path: '/dashboard/users', icon: 'users' },
     { name: 'Meeting Schedule', path: '/dashboard/meetings', icon: 'calendar' },
     { name: 'Assigned Tasks', path: '/dashboard/tasks', icon: 'tasks' },
+    { name: 'Submitted Tasks', path: '/dashboard/submitted-tasks', icon: 'check' },
     { name: 'Reports & Analytics', path: '/dashboard/reports', icon: 'chart' },
     { name: 'User Logs', path: '/dashboard/user-logs', icon: 'history' },
     { name: 'Admin Profile', path: '/dashboard/profile', icon: 'user' }

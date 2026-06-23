@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import Icon from '../components/Icon'
 import { meetingApi } from '../services/api'
+import { PieChart, BarChart } from '../components/Charts'
 
 function formatDate(value) {
-  return value ? new Date(value).toLocaleDateString() : 'Not set'
+  return value ? new Date(value).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : 'Not set'
 }
 
 function safeFilename(value) {
@@ -102,68 +103,109 @@ function MeetingReports() {
 
   const stats = dashboard?.stats || {}
   const cards = [
-    { label: 'Scheduled meetings', value: stats.scheduled_meetings || 0, icon: 'calendar', color: 'bg-blue-600' },
-    { label: 'Completed meetings', value: stats.completed_meetings || 0, icon: 'check', color: 'bg-emerald-600' },
-    { label: 'Pending action items', value: stats.pending_action_items || 0, icon: 'tasks', color: 'bg-amber-600' },
-    { label: 'Meeting reports', value: stats.meetings_with_minutes || 0, icon: 'minutes', color: 'bg-slate-700' },
+    { label: 'Scheduled', value: stats.scheduled_meetings || 0, icon: 'calendar', color: 'from-blue-500 to-indigo-600' },
+    { label: 'Completed', value: stats.completed_meetings || 0, icon: 'check', color: 'from-emerald-500 to-teal-600' },
+    { label: 'Pending Actions', value: stats.pending_action_items || 0, icon: 'tasks', color: 'from-amber-500 to-orange-500' },
+    { label: 'Reports', value: stats.meetings_with_minutes || 0, icon: 'minutes', color: 'from-slate-700 to-slate-900' },
   ]
 
+  const organizerData = (dashboard?.meetingsByOrganizer || []).map(org => ({
+    label: org.organizer_name.split(' ')[0],
+    value: org.meeting_count
+  }));
+  
+  const statusData = [
+    { label: 'Scheduled', value: stats.scheduled_meetings || 0, color: '#3b82f6' },
+    { label: 'Completed', value: stats.completed_meetings || 0, color: '#10b981' }
+  ].filter(d => d.value > 0);
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-black text-slate-900">Meeting Reports</h1>
-        <p className="mt-1 text-sm text-slate-500">Search meetings, select an event, then view its full report.</p>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="relative overflow-hidden rounded-3xl bg-slate-900 px-8 py-8 text-white shadow-xl">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500"></div>
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight">Meeting Reports & Analytics</h1>
+          <p className="mt-2 text-slate-300">Filter meetings, view advanced analytics, and export full reports.</p>
+        </div>
       </div>
 
       {error && <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</div>}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
-          <div key={card.label} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-            <div className={`flex h-10 w-10 items-center justify-center rounded-xl text-white ${card.color}`}>
-              <Icon name={card.icon} className="h-5 w-5" />
+          <div key={card.label} className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm border border-slate-100 hover:shadow-md transition-all">
+            <div className={`flex h-12 w-12 items-center justify-center rounded-xl text-white bg-gradient-to-br ${card.color} shadow-inner`}>
+              <Icon name={card.icon} className="h-6 w-6" />
             </div>
-            <p className="mt-4 text-xs font-bold uppercase tracking-wider text-slate-400">{card.label}</p>
-            <p className="mt-1 text-2xl font-black text-slate-900">{card.value}</p>
+            <p className="mt-5 text-xs font-bold uppercase tracking-wider text-slate-400">{card.label}</p>
+            <p className="mt-1 text-3xl font-black text-slate-900">{card.value}</p>
+            <div className={`absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r ${card.color} opacity-0 transition-opacity group-hover:opacity-100`}></div>
           </div>
         ))}
       </div>
 
-      <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-        <div className="grid gap-3 md:grid-cols-3">
-          <input className="h-11 rounded-xl border border-slate-100 bg-slate-50 px-4 text-sm outline-none focus:border-blue-600 focus:bg-white" placeholder="Search meetings" value={filters.search} onChange={(e) => updateFilter('search', e.target.value)} />
-          <input className="h-11 rounded-xl border border-slate-100 bg-slate-50 px-4 text-sm outline-none focus:border-blue-600 focus:bg-white" type="date" value={filters.dateFrom} onChange={(e) => updateFilter('dateFrom', e.target.value)} />
-          <input className="h-11 rounded-xl border border-slate-100 bg-slate-50 px-4 text-sm outline-none focus:border-blue-600 focus:bg-white" type="date" value={filters.dateTo} onChange={(e) => updateFilter('dateTo', e.target.value)} />
-          <input className="h-11 rounded-xl border border-slate-100 bg-slate-50 px-4 text-sm outline-none focus:border-blue-600 focus:bg-white" placeholder="Organizer" value={filters.organizer} onChange={(e) => updateFilter('organizer', e.target.value)} />
-          <input className="h-11 rounded-xl border border-slate-100 bg-slate-50 px-4 text-sm outline-none focus:border-blue-600 focus:bg-white" placeholder="Project" value={filters.project} onChange={(e) => updateFilter('project', e.target.value)} />
-          <input className="h-11 rounded-xl border border-slate-100 bg-slate-50 px-4 text-sm outline-none focus:border-blue-600 focus:bg-white" placeholder="Participant" value={filters.participant} onChange={(e) => updateFilter('participant', e.target.value)} />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
+          <h2 className="text-lg font-bold text-slate-900 mb-6">Meetings by Organizer</h2>
+          <div className="flex-1 flex items-end">
+            <BarChart data={organizerData} />
+          </div>
+        </div>
+        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
+          <h2 className="text-lg font-bold text-slate-900 mb-6">Meeting Status Distribution</h2>
+          <div className="flex-1 flex items-center justify-center">
+            <PieChart data={statusData.length ? statusData : [{label: 'No Data', value: 1, color: '#e2e8f0'}]} />
+          </div>
+        </div>
+      </div>
+
+      <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Advanced Filters</h2>
+        <div className="grid gap-4 md:grid-cols-3">
+          <input className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-blue-600 focus:bg-white" placeholder="Search meetings" value={filters.search} onChange={(e) => updateFilter('search', e.target.value)} />
+          <input className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-blue-600 focus:bg-white" type="date" value={filters.dateFrom} onChange={(e) => updateFilter('dateFrom', e.target.value)} />
+          <input className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-blue-600 focus:bg-white" type="date" value={filters.dateTo} onChange={(e) => updateFilter('dateTo', e.target.value)} />
+          <input className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-blue-600 focus:bg-white" placeholder="Organizer" value={filters.organizer} onChange={(e) => updateFilter('organizer', e.target.value)} />
+          <input className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-blue-600 focus:bg-white" placeholder="Project" value={filters.project} onChange={(e) => updateFilter('project', e.target.value)} />
+          <input className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-blue-600 focus:bg-white" placeholder="Participant" value={filters.participant} onChange={(e) => updateFilter('participant', e.target.value)} />
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900">Select Event</h2>
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{loading ? 'Loading...' : `${meetings.length} found`}</span>
+      <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-slate-900">Select Event to View Full Report</h2>
+          <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-slate-600">{loading ? 'Loading...' : `${meetings.length} found`}</span>
         </div>
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
           {meetings.map((meeting) => (
             <button
               key={meeting.id}
               type="button"
               onClick={() => setSelectedMeetingId(meeting.id)}
-              className="rounded-xl border border-slate-100 p-4 text-left transition hover:border-blue-200 hover:bg-blue-50"
+              className="group flex flex-col justify-between rounded-2xl border border-slate-200 p-5 text-left transition hover:border-blue-300 hover:bg-blue-50 hover:shadow-md"
             >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="font-bold text-slate-900">{meeting.title}</p>
-                  <p className="mt-1 text-sm text-slate-500">{formatDate(meeting.meeting_date)} - {meeting.organizer_name}</p>
-                  <p className="mt-1 text-xs text-slate-400">{meeting.location || 'No location'}</p>
+              <div>
+                <p className="font-bold text-slate-900 line-clamp-1">{meeting.title}</p>
+                <div className="mt-2 flex items-center gap-2 text-xs text-slate-500 font-medium">
+                  <Icon name="calendar" className="h-3.5 w-3.5" />
+                  {formatDate(meeting.meeting_date)}
                 </div>
-                <span className="rounded-lg bg-blue-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-700">View report</span>
+                <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                  <Icon name="users" className="h-3.5 w-3.5" />
+                  {meeting.organizer_name}
+                </div>
+              </div>
+              <div className="mt-4 flex w-full items-center justify-between">
+                <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold uppercase tracking-wider ${meeting.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
+                  {meeting.status || 'scheduled'}
+                </span>
+                <span className="text-xs font-semibold text-blue-600 opacity-0 transition-opacity group-hover:opacity-100 flex items-center gap-1">
+                  View <Icon name="check" className="h-3 w-3" />
+                </span>
               </div>
             </button>
           ))}
-          {!loading && meetings.length === 0 && <p className="py-10 text-center text-sm text-slate-500 lg:col-span-2">No meetings matched the current query.</p>}
+          {!loading && meetings.length === 0 && <div className="py-10 text-center text-sm font-medium text-slate-500 lg:col-span-2 xl:col-span-3">No meetings matched the current query.</div>}
         </div>
       </section>
 
@@ -196,84 +238,117 @@ function ReportModal({ loading, meeting, minutes, onClose }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+      <div className="relative max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 px-8 py-6 bg-slate-50/50">
           <div>
-            <h2 className="text-xl font-black text-slate-900">Meeting Report</h2>
-            <p className="mt-1 text-sm text-slate-500">{title}</p>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Meeting Report</h2>
+            <p className="mt-1 text-sm font-medium text-slate-500">{title}</p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100">
+          <button type="button" onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition">
             <Icon name="close" className="h-6 w-6" />
           </button>
         </div>
 
-        <div className="max-h-[calc(90vh-88px)] overflow-y-auto p-6">
+        <div className="max-h-[calc(90vh-100px)] overflow-y-auto p-8 custom-scrollbar">
           {loading ? (
-            <div className="rounded-xl bg-slate-50 p-5 text-sm font-semibold text-slate-500">Loading selected report...</div>
+            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+              <Icon name="chart" className="h-10 w-10 animate-pulse mb-4" />
+              <p className="text-sm font-bold uppercase tracking-wider">Loading report...</p>
+            </div>
           ) : (
-            <div className="space-y-6">
-              <section className="rounded-xl border border-slate-100 p-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <h3 className="text-lg font-black text-slate-900">{meeting?.title || 'Untitled meeting'}</h3>
-                    <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{meeting?.agenda || 'No agenda recorded.'}</p>
-                  </div>
-                  <div className="grid min-w-64 gap-2 text-sm text-slate-600">
-                    <p><span className="font-bold text-slate-900">Date:</span> {formatDate(meeting?.meeting_date)}</p>
-                    <p><span className="font-bold text-slate-900">Time:</span> {meeting?.meeting_time || 'Not set'}</p>
-                    <p><span className="font-bold text-slate-900">Location:</span> {meeting?.location || 'Not set'}</p>
-                    <p><span className="font-bold text-slate-900">Status:</span> {meeting?.status || 'Not set'}</p>
-                  </div>
-                </div>
-              </section>
-
-              <section className="rounded-xl border border-slate-100 p-5">
-                <h3 className="text-sm font-black uppercase tracking-wider text-slate-700">Participants</h3>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {participants.length ? participants.map((participant) => (
-                    <div key={participant.id} className="rounded-xl bg-slate-50 p-3">
-                      <p className="text-sm font-bold text-slate-900">{participant.fullname}</p>
-                      <p className="mt-1 text-xs text-slate-500">{participant.username || 'Participant'}</p>
+            <div className="space-y-8">
+              <section className="rounded-2xl border border-slate-100 p-6 bg-white shadow-sm">
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-black text-slate-900">{meeting?.title || 'Untitled meeting'}</h3>
+                    <div className="mt-4 rounded-xl bg-slate-50 p-4">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Agenda</h4>
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{meeting?.agenda || 'No agenda recorded.'}</p>
                     </div>
-                  )) : <p className="text-sm text-slate-500">No participants recorded.</p>}
+                  </div>
+                  <div className="grid min-w-[280px] gap-3 text-sm text-slate-600 rounded-xl border border-slate-100 p-4 bg-slate-50/50">
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-200/60">
+                      <span className="font-bold text-slate-900 text-xs uppercase">Date</span>
+                      <span className="font-medium">{formatDate(meeting?.meeting_date)}</span>
+                    </div>
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-200/60">
+                      <span className="font-bold text-slate-900 text-xs uppercase">Time</span>
+                      <span className="font-medium">{meeting?.meeting_time || 'Not set'}</span>
+                    </div>
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-200/60">
+                      <span className="font-bold text-slate-900 text-xs uppercase">Location</span>
+                      <span className="font-medium">{meeting?.location || 'Not set'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-slate-900 text-xs uppercase">Status</span>
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold uppercase ${meeting?.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
+                        {meeting?.status || 'Not set'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </section>
 
-              <section className="rounded-xl border border-slate-100 p-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <h3 className="text-sm font-black uppercase tracking-wider text-slate-700">Tasks</h3>
-                  <div className="grid gap-2 sm:grid-cols-5">
-                    <TaskMetric label="Total" value={taskStats.total} />
-                    <TaskMetric label="Completed" value={taskStats.completed} />
-                    <TaskMetric label="Submitted" value={taskStats.submitted} />
-                    <TaskMetric label="Pending" value={taskStats.pending} />
-                    <TaskMetric label="Not submitted" value={taskStats.notSubmitted} />
+              <section className="rounded-2xl border border-slate-100 p-6 bg-white shadow-sm">
+                <h3 className="text-sm font-black uppercase tracking-wider text-slate-700 mb-5">Participants ({participants.length})</h3>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {participants.length ? participants.map((participant) => (
+                    <div key={participant.id} className="flex items-center gap-3 rounded-xl bg-slate-50 p-3 transition hover:bg-slate-100">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-bold text-sm">
+                        {participant.fullname.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">{participant.fullname}</p>
+                        <p className="text-xs font-medium text-slate-500">@{participant.username || 'user'}</p>
+                      </div>
+                    </div>
+                  )) : <p className="text-sm text-slate-500 italic">No participants recorded.</p>}
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-slate-100 p-6 bg-white shadow-sm">
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between mb-6">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-slate-700">Action Items Status</h3>
+                  <div className="flex flex-wrap gap-2">
+                    <TaskMetric label="Total" value={taskStats.total} color="slate" />
+                    <TaskMetric label="Completed" value={taskStats.completed} color="emerald" />
+                    <TaskMetric label="Pending" value={taskStats.pending} color="amber" />
                   </div>
                 </div>
 
-                <div className="mt-5 overflow-x-auto">
+                <div className="overflow-hidden rounded-xl border border-slate-100">
                   <table className="min-w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-xs font-bold uppercase tracking-wider text-slate-400">
-                        <th className="py-3 pr-4">Task name</th>
-                        <th className="py-3 pr-4">Assigned to</th>
-                        <th className="py-3 pr-4">Deadline</th>
-                        <th className="py-3 pr-4">Status</th>
+                    <thead className="bg-slate-50">
+                      <tr className="border-b border-slate-100 text-xs font-bold uppercase tracking-wider text-slate-500">
+                        <th className="py-4 pl-5 pr-4">Task name</th>
+                        <th className="py-4 pr-4">Assigned to</th>
+                        <th className="py-4 pr-4">Deadline</th>
+                        <th className="py-4 pr-5 text-right">Status</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-slate-100">
                       {tasks.length ? tasks.map((task) => (
-                        <tr key={task.id} className="border-b border-slate-50">
-                          <td className="py-3 pr-4 font-semibold text-slate-800">{task.task_description}</td>
-                          <td className="py-3 pr-4 text-slate-600">{task.assigned_to_name || 'Unassigned'}</td>
-                          <td className="py-3 pr-4 text-slate-600">{formatDate(task.deadline)}</td>
-                          <td className="py-3 pr-4">
-                            <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-slate-700">{task.status || 'pending'}</span>
+                        <tr key={task.id} className="transition hover:bg-slate-50/50">
+                          <td className="py-4 pl-5 pr-4 font-semibold text-slate-800">{task.task_description}</td>
+                          <td className="py-4 pr-4 text-slate-600 font-medium">
+                            {task.assigned_to_name ? (
+                               <span className="flex items-center gap-2"><div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">{task.assigned_to_name.charAt(0)}</div>{task.assigned_to_name}</span>
+                            ) : 'Unassigned'}
+                          </td>
+                          <td className="py-4 pr-4 text-slate-500">{formatDate(task.deadline)}</td>
+                          <td className="py-4 pr-5 text-right">
+                            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider
+                              ${task.status === 'completed' || task.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                                task.status === 'submitted' ? 'bg-blue-100 text-blue-700' :
+                                'bg-amber-100 text-amber-700'
+                              }`}>
+                              {task.status || 'pending'}
+                            </span>
                           </td>
                         </tr>
                       )) : (
                         <tr>
-                          <td colSpan="4" className="py-6 text-center text-slate-500">No tasks recorded for this meeting.</td>
+                          <td colSpan="4" className="py-8 text-center text-slate-500 italic">No tasks recorded for this meeting.</td>
                         </tr>
                       )}
                     </tbody>
@@ -281,9 +356,13 @@ function ReportModal({ loading, meeting, minutes, onClose }) {
                 </div>
               </section>
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-                <button type="button" onClick={() => meetingApi.exportReport(meeting.id, 'pdf', safeFilename(title))} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50">Export PDF</button>
-                <button type="button" onClick={() => meetingApi.exportReport(meeting.id, 'word', safeFilename(title))} className="rounded-xl bg-blue-700 px-4 py-2 text-sm font-bold text-white hover:bg-blue-800">Export Word</button>
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end border-t border-slate-100 pt-6 mt-6">
+                <button type="button" onClick={() => meetingApi.exportReport(meeting.id, 'pdf', safeFilename(title))} className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition shadow-sm">
+                  <Icon name="dashboard" className="h-4 w-4" /> Export PDF
+                </button>
+                <button type="button" onClick={() => meetingApi.exportReport(meeting.id, 'word', safeFilename(title))} className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-blue-700 transition shadow-md shadow-blue-500/20">
+                  <Icon name="tasks" className="h-4 w-4" /> Export Word
+                </button>
               </div>
             </div>
           )}
@@ -293,11 +372,16 @@ function ReportModal({ loading, meeting, minutes, onClose }) {
   )
 }
 
-function TaskMetric({ label, value }) {
+function TaskMetric({ label, value, color }) {
+  const colorMap = {
+    slate: 'bg-slate-100 text-slate-700',
+    emerald: 'bg-emerald-100 text-emerald-700',
+    amber: 'bg-amber-100 text-amber-700',
+  }
   return (
-    <div className="rounded-lg bg-slate-50 px-3 py-2 text-center">
-      <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{label}</p>
-      <p className="text-lg font-black text-slate-900">{value}</p>
+    <div className={`rounded-lg px-4 py-2 text-center ${colorMap[color] || colorMap.slate}`}>
+      <p className="text-[10px] font-bold uppercase tracking-wider opacity-70">{label}</p>
+      <p className="text-xl font-black">{value}</p>
     </div>
   )
 }

@@ -124,44 +124,6 @@ export default function AssignedTasksPage() {
         )}
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-4 text-lg font-semibold text-slate-950">Submitted Tasks For Review</h2>
-        {submittedTasks.length === 0 ? (
-          <p className="text-sm text-slate-500">No submitted tasks awaiting review.</p>
-        ) : (
-          <div className="grid gap-3">
-            {submittedTasks.map((task) => (
-              <article key={task.id} className="rounded-lg border border-slate-200 p-4">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <p className="font-semibold text-slate-950">{task.task_description}</p>
-                    <p className="mt-1 text-sm text-slate-500">{task.meeting_title} - {task.participant_name}</p>
-                    <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">{task.completion_note}</p>
-                    {task.attachments?.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {task.attachments.map((attachment) => (
-                          <button
-                            key={attachment.id}
-                            type="button"
-                            className="rounded-lg border border-slate-300 px-3 py-1 text-xs font-semibold text-blue-700 hover:border-blue-700 hover:bg-blue-50"
-                            onClick={() => downloadAttachment(attachment)}
-                          >
-                            {attachment.original_name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => approveTask(task.id)} className="h-10 rounded-lg bg-emerald-700 px-4 text-sm font-semibold text-white hover:bg-emerald-800">Approve</button>
-                    <button onClick={() => setRejectingTask(task)} className="h-10 rounded-lg border border-red-300 px-4 text-sm font-semibold text-red-700 hover:bg-red-50">Reject</button>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
 
       <section>
       <div className="mb-4">
@@ -193,7 +155,7 @@ export default function AssignedTasksPage() {
             </tr>
           </thead>
           <tbody>
-            {tasks.map(task => (
+            {tasks.filter(task => task.status?.toLowerCase() !== 'completed' && task.status?.toLowerCase() !== 'approved').map(task => (
               <tr key={task.id} className={rowStyle(task)}>
                 <td className="border px-4 py-2">{task.task_description}</td>
                 <td className="border px-4 py-2">{task.assigned_to_name || 'Unassigned'}</td>

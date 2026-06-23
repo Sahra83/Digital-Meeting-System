@@ -169,8 +169,8 @@ class Meeting {
         `
           SELECT
             COUNT(*)::int AS total_meetings,
-            COUNT(*) FILTER (WHERE m.status = 'scheduled')::int AS scheduled_meetings,
-            COUNT(*) FILTER (WHERE m.status = 'completed')::int AS completed_meetings,
+            COUNT(*) FILTER (WHERE m.status ILIKE 'scheduled')::int AS scheduled_meetings,
+            COUNT(*) FILTER (WHERE m.status ILIKE 'completed')::int AS completed_meetings,
             COUNT(DISTINCT mm.id)::int AS meetings_with_minutes,
             COUNT(at.id) FILTER (WHERE COALESCE(at.status, 'pending') = 'pending')::int AS pending_action_items,
             COUNT(at.id)::int AS total_action_items,
@@ -188,7 +188,7 @@ class Meeting {
           SELECT m.id, m.title, m.meeting_date, m.meeting_time, m.location, m.status, u.fullname AS organizer_name
           FROM meetings m
           JOIN users u ON u.id = m.organizer_id
-          WHERE m.status = 'scheduled'
+          WHERE m.status ILIKE 'scheduled'
           ORDER BY m.meeting_date ASC, m.meeting_time ASC
           LIMIT 6
         `
@@ -198,7 +198,7 @@ class Meeting {
           SELECT m.id, m.title, m.meeting_date, m.meeting_time, m.status, u.fullname AS organizer_name
           FROM meetings m
           JOIN users u ON u.id = m.organizer_id
-          WHERE m.status = 'completed'
+          WHERE m.status ILIKE 'completed'
           ORDER BY m.meeting_date DESC, m.meeting_time DESC
           LIMIT 6
         `
