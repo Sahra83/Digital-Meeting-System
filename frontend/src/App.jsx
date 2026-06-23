@@ -20,38 +20,42 @@ import Collaboration from './pages/Collaboration'
 import MyMeetings from './pages/MyMeetings'
 import MeetingReports from './pages/MeetingReports'
 import UserLogs from './pages/UserLogs'
+import { ThemeProvider } from './context/ThemeContext'
+
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<Home />} />
-        </Route>
-        <Route path="/login" element={<Login />} />
-        <Route element={<ProtectedRoute />}>
-          <Route element={<AdminLayout />}>
-            <Route path="/dashboard/overview" element={<Dashboard />} />
-            <Route path="/dashboard/users" element={<UserManagement />} />
-            <Route path="/dashboard/meetings" element={<MeetingManagement />} />
-            <Route path="/dashboard/reports" element={<MeetingReports />} />
-            <Route path="/dashboard/user-logs" element={<UserLogs />} />
-            <Route path="/dashboard/profile" element={<Profile />} />
-            <Route path="/dashboard/collaboration" element={<Collaboration />} />
-            <Route path="/dashboard/tasks" element={<AssignedTasksPage />} />
-            <Route path="/dashboard/submitted-tasks" element={<SubmittedTasksPage />} />
+    <ThemeProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<Home />} />
           </Route>
-        </Route>
-        <Route element={<ProtectedParticipantRoute/>}>
-          <Route element={<ParticipantLayout/>}>
-            <Route path="/participant/dashboard" element={<ParticipantDashboard/>} />
-            <Route path="/participant/meetings" element={<MyMeetings/>} />
-            <Route path="/participant/meetings/:id" element={<MeetingDetails/>} />
-            <Route path="/participant/tasks" element={<MyTasks/>} />
-            <Route path="/participant/profile" element={<ParticipantProfile/>} />
+          <Route path="/login" element={<Login />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AdminLayout />}>
+              <Route path="/dashboard/overview" element={<Dashboard />} />
+              <Route path="/dashboard/users" element={<UserManagement />} />
+              <Route path="/dashboard/meetings" element={<MeetingManagement />} />
+              <Route path="/dashboard/reports" element={<MeetingReports />} />
+              <Route path="/dashboard/user-logs" element={<UserLogs />} />
+              <Route path="/dashboard/profile" element={<Profile />} />
+              <Route path="/dashboard/collaboration" element={<Collaboration />} />
+              <Route path="/dashboard/tasks" element={<AssignedTasksPage />} />
+              <Route path="/dashboard/submitted-tasks" element={<SubmittedTasksPage />} />
+            </Route>
           </Route>
-        </Route>
-      </Routes>
-    </BrowserRouter>
+          <Route element={<ProtectedParticipantRoute/>}>
+            <Route element={<ParticipantLayout/>}>
+              <Route path="/participant/dashboard" element={<ParticipantDashboard/>} />
+              <Route path="/participant/meetings" element={<MyMeetings/>} />
+              <Route path="/participant/meetings/:id" element={<MeetingDetails/>} />
+              <Route path="/participant/tasks" element={<MyTasks/>} />
+              <Route path="/participant/profile" element={<ParticipantProfile/>} />
+            </Route>
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
   )
 }
 

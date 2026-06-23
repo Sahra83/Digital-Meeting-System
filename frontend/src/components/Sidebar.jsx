@@ -25,7 +25,7 @@ function Sidebar({ isOpen, onClose }) {
       />
 
       {/* Sidebar Container */}
-      <aside className={`fixed left-0 top-0 z-50 h-screen w-72 transform border-r border-slate-200 bg-white transition-transform duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed left-0 top-0 z-50 h-screen w-72 transform border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 transition-all duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex h-full flex-col">
           {/* Logo Section */}
           <div className="flex h-20 items-center gap-3 px-6">
@@ -33,7 +33,7 @@ function Sidebar({ isOpen, onClose }) {
               <Icon name="collab" className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-950">Admin Portal</h2>
+              <h2 className="text-lg font-bold text-slate-950 dark:text-white transition-colors">Admin Portal</h2>
             </div>
           </div>
 
@@ -46,8 +46,8 @@ function Sidebar({ isOpen, onClose }) {
                 onClick={() => window.innerWidth < 1024 && onClose()}
                 className={({ isActive }) =>
                   `flex items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${isActive
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200'
                   }`
                 }
               >
@@ -55,11 +55,11 @@ function Sidebar({ isOpen, onClose }) {
                   <>
                     <Icon
                       name={item.icon}
-                      className={`h-5 w-5 transition-colors ${isActive ? 'text-blue-700' : 'text-slate-400'}`}
+                      className={`h-5 w-5 transition-colors ${isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`}
                     />
                     <span>{item.name}</span>
                     {isActive && (
-                      <div className="ml-auto h-1.5 w-1.5 rounded-full bg-blue-700" />
+                      <div className="ml-auto h-1.5 w-1.5 rounded-full bg-blue-700 dark:bg-blue-400" />
                     )}
                   </>
                 )}
@@ -68,18 +68,18 @@ function Sidebar({ isOpen, onClose }) {
           </nav>
 
           {/* User Profile Info (Small) */}
-          <div className="border-t border-slate-200 p-4">
+          <div className="border-t border-slate-200 dark:border-slate-800 p-4 transition-colors">
             <NavLink
               to="/dashboard/profile"
               onClick={() => window.innerWidth < 1024 && onClose()}
-              className="flex items-center gap-3 rounded-lg bg-slate-50 p-3 transition hover:bg-blue-50"
+              className="flex items-center gap-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 p-3 transition hover:bg-blue-50 dark:hover:bg-blue-900/20"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400">
                 <span className="text-sm font-bold">{user?.fullname?.charAt(0).toUpperCase()}</span>
               </div>
               <div className="overflow-hidden">
-                <p className="truncate text-sm font-bold text-slate-900">{user?.fullname}</p>
-                <p className="truncate text-xs text-slate-500">@{user?.username} · {user?.role_name}</p>
+                <p className="truncate text-sm font-bold text-slate-900 dark:text-white transition-colors">{user?.fullname}</p>
+                <p className="truncate text-xs text-slate-500 dark:text-slate-400 transition-colors">@{user?.username} · {user?.role_name}</p>
               </div>
             </NavLink>
           </div>
