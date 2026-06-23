@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Icon from '../components/Icon'
 import { meetingApi } from '../services/api'
-import { PieChart, BarChart, LineChart } from '../components/Charts'
+import { PieChart, BarChart } from '../components/Charts'
 
 function formatDate(value) {
   return value ? new Date(value).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : 'Not set'
@@ -105,22 +105,32 @@ function MeetingReports() {
   const stats = dashboard?.stats || {}
   const cards = [
     { label: 'Total Meetings', value: stats.total_meetings || 0, icon: 'dashboard', color: 'from-blue-600 to-indigo-600' },
-    { label: 'Completed Meetings', value: stats.completed_meetings || 0, icon: 'check', color: 'from-emerald-500 to-teal-600' },
-    { label: 'Action Items (Pending)', value: stats.pending_action_items || 0, icon: 'tasks', color: 'from-amber-500 to-orange-500' },
+    { label: 'Completed Meetings', value: stats.completed_meetings || 0, icon: 'check', color: 'from-emerald-500 to-teal-600', note: 'date passed' },
+    { label: 'Upcoming Soon', value: stats.upcoming_soon || 0, icon: 'tasks', color: 'from-amber-500 to-orange-500', note: 'next 3 days' },
     { label: 'Reports Available', value: stats.meetings_with_minutes || 0, icon: 'minutes', color: 'from-slate-700 to-slate-900' },
   ]
 
   const meetingTaskComparison = dashboard?.meetingTaskComparison || [];
-  
-  const colors = { scheduled: '#3b82f6', completed: '#10b981', canceled: '#ef4444' };
-  const statusData = (dashboard?.statusDistribution || []).map(s => ({
-    label: s.label.charAt(0).toUpperCase() + s.label.slice(1),
-    value: s.value,
-    color: colors[s.label.toLowerCase()] || '#94a3b8'
-  })).filter(d => d.value > 0);
+  const distinctStatuses = dashboard?.distinctStatuses || [];
+
+  // Build bar chart data: each meeting with completed_pct
+  const barChartData = meetingTaskComparison.map(m => ({
+    label: m.meeting_title.length > 12 ? m.meeting_title.slice(0, 12) + '…' : m.meeting_title,
+    value: m.completed_pct || 0
+  }));
+
+  // Build pie chart data: each meeting's completed tasks count for comparison
+  const pieColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16', '#f97316', '#14b8a6'];
+  const pieChartData = meetingTaskComparison
+    .filter(m => m.completed_tasks > 0)
+    .map((m, idx) => ({
+      label: m.meeting_title.length > 14 ? m.meeting_title.slice(0, 14) + '…' : m.meeting_title,
+      value: m.completed_tasks,
+      color: pieColors[idx % pieColors.length]
+    }));
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-10">
       <div className="relative overflow-hidden rounded-3xl bg-slate-900 px-8 py-8 text-white shadow-xl">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500"></div>
         <div>
@@ -134,8 +144,11 @@ function MeetingReports() {
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
           <div key={card.label} className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm border border-slate-100 hover:shadow-md transition-all">
-            <div className={`flex h-12 w-12 items-center justify-center rounded-xl text-white bg-gradient-to-br ${card.color} shadow-inner`}>
-              <Icon name={card.icon} className="h-6 w-6" />
+            <div className="flex items-center justify-between">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-xl text-white bg-gradient-to-br ${card.color} shadow-inner`}>
+                <Icon name={card.icon} className="h-6 w-6" />
+              </div>
+              {card.note && <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{card.note}</span>}
             </div>
             <p className="mt-5 text-xs font-bold uppercase tracking-wider text-slate-400">{card.label}</p>
             <p className="mt-1 text-3xl font-black text-slate-900">{card.value}</p>
@@ -144,43 +157,91 @@ function MeetingReports() {
         ))}
       </div>
 
+      {/* Charts Row */}
       <div className="grid gap-6 lg:grid-cols-2">
+        {/* Big Bar Chart: Every meeting task completion comparison */}
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
-          <h2 className="text-lg font-bold text-slate-900 mb-6">Meeting Status Distribution</h2>
-          <div className="flex-1 flex items-center justify-center">
-            <PieChart data={statusData.length ? statusData : [{label: 'No Data', value: 1, color: '#e2e8f0'}]} />
-          </div>
-        </div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
-          <h2 className="text-lg font-bold text-slate-900 mb-6">Task Completion (%) by Meeting</h2>
-          <div className="flex-1 flex items-end">
-            {meetingTaskComparison.length > 0 ? (
-              <BarChart data={meetingTaskComparison.map(m => {
-                const completedPct = m.total_tasks > 0 ? Math.round((m.completed_tasks / m.total_tasks) * 100) : 0;
-                return { label: m.meeting_title.split(' ').slice(0, 2).join(' '), value: completedPct };
-              })} />
+          <h2 className="text-lg font-bold text-slate-900 mb-2">All Meetings — Task Completion (%)</h2>
+          <p className="text-xs text-slate-500 mb-6">Percentage of tasks submitted/completed per meeting. Data from database.</p>
+          <div className="flex-1 flex items-end min-h-[220px]">
+            {barChartData.length > 0 ? (
+              <BarChart data={barChartData} />
             ) : (
-              <div className="flex w-full h-32 items-center justify-center text-slate-400 text-sm italic">No meeting tasks available</div>
+              <div className="flex w-full h-32 items-center justify-center text-slate-400 text-sm italic">No meeting task data available</div>
             )}
           </div>
+          {/* Legend table under the chart */}
+          {meetingTaskComparison.length > 0 && (
+            <div className="mt-6 overflow-x-auto">
+              <table className="min-w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="py-2 pr-3">Meeting</th>
+                    <th className="py-2 pr-3 text-center">Total</th>
+                    <th className="py-2 pr-3 text-center">Completed</th>
+                    <th className="py-2 pr-3 text-center">Pending</th>
+                    <th className="py-2 text-right">%</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {meetingTaskComparison.map((m, i) => (
+                    <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="py-1.5 pr-3 font-semibold text-slate-700 truncate max-w-[160px]">{m.meeting_title}</td>
+                      <td className="py-1.5 pr-3 text-center text-slate-600">{m.total_tasks}</td>
+                      <td className="py-1.5 pr-3 text-center text-emerald-600 font-bold">{m.completed_tasks}</td>
+                      <td className="py-1.5 pr-3 text-center text-amber-600 font-bold">{m.pending_tasks}</td>
+                      <td className="py-1.5 text-right font-black text-slate-900">{m.completed_pct}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Pie Chart: Submitted tasks distribution across meetings + top submitters */}
+        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
+          <h2 className="text-lg font-bold text-slate-900 mb-2">Submitted Tasks by Meeting</h2>
+          <p className="text-xs text-slate-500 mb-6">Compare which meetings have the most submitted/completed tasks.</p>
+          <div className="flex-1 flex items-center justify-center min-h-[220px]">
+            {pieChartData.length > 0 ? (
+              <PieChart data={pieChartData} />
+            ) : (
+              <div className="flex w-full h-32 items-center justify-center text-slate-400 text-sm italic">No submitted task data</div>
+            )}
+          </div>
+          {/* Top submitters */}
+          {meetingTaskComparison.some(m => m.top_submitters) && (
+            <div className="mt-6 space-y-2">
+              <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Top Submitters per Meeting</h3>
+              {meetingTaskComparison.filter(m => m.top_submitters).map((m, i) => (
+                <div key={i} className="flex items-start gap-2 text-xs">
+                  <span className="font-bold text-slate-700 whitespace-nowrap">{m.meeting_title.length > 20 ? m.meeting_title.slice(0, 20) + '…' : m.meeting_title}:</span>
+                  <span className="text-slate-500">{m.top_submitters}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Filter Section */}
       <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4"> Filter meetings</h2>
+        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Filter Meetings</h2>
         <div className="grid gap-4 md:grid-cols-3">
           <input className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-blue-600 focus:bg-white" placeholder="Search meetings" value={filters.search} onChange={(e) => updateFilter('search', e.target.value)} />
           <input className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-blue-600 focus:bg-white" placeholder="Project" value={filters.project} onChange={(e) => updateFilter('project', e.target.value)} />
           <input className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-blue-600 focus:bg-white" placeholder="Participant" value={filters.participant} onChange={(e) => updateFilter('participant', e.target.value)} />
           <select className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-blue-600 focus:bg-white" value={filters.status} onChange={(e) => updateFilter('status', e.target.value)}>
             <option value="">All Statuses</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="completed">Completed</option>
-            <option value="canceled">Canceled</option>
+            {distinctStatuses.map(s => (
+              <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+            ))}
           </select>
         </div>
       </section>
 
+      {/* Meeting List */}
       <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-900">Select Event to View Full Report</h2>
@@ -236,14 +297,34 @@ function ReportModal({ loading, meeting, minutes, onClose }) {
   const participants = meeting?.participants || []
   const title = meeting?.title || 'Meeting report'
   const taskStats = useMemo(() => {
-    const completed = tasks.filter((task) => task.status === 'completed').length
+    const completed = tasks.filter((task) => task.status === 'completed' || task.status === 'approved').length
     const submitted = tasks.filter((task) => task.status === 'submitted').length
-    const pending = tasks.filter((task) => task.status === 'pending').length
-    const inProgress = tasks.filter((task) => task.status === 'in_progress').length
-    const notSubmitted = tasks.filter((task) => !['submitted', 'completed'].includes(task.status)).length
+    const pending = tasks.filter((task) => task.status === 'pending' || task.status === 'in_progress').length
+    const notSubmitted = tasks.filter((task) => !['submitted', 'completed', 'approved'].includes(task.status)).length
 
-    return { completed, submitted, pending, inProgress, notSubmitted, total: tasks.length }
+    return { completed, submitted, pending, notSubmitted, total: tasks.length }
   }, [tasks])
+
+  const pieColors = ['#10b981', '#3b82f6', '#f59e0b', '#94a3b8'];
+  const modalPieData = [
+    { label: 'Completed', value: taskStats.completed, color: pieColors[0] },
+    { label: 'Submitted', value: taskStats.submitted, color: pieColors[1] },
+    { label: 'Pending', value: taskStats.pending, color: pieColors[2] },
+    { label: 'Not Submitted', value: taskStats.notSubmitted, color: pieColors[3] }
+  ].filter(d => d.value > 0);
+
+  // Bar chart: per-assignee task count
+  const assigneeCounts = {};
+  tasks.forEach(t => {
+    const name = t.assigned_to_name || 'Unassigned';
+    if (!assigneeCounts[name]) assigneeCounts[name] = { completed: 0, total: 0 };
+    assigneeCounts[name].total++;
+    if (['completed', 'approved', 'submitted'].includes(t.status)) assigneeCounts[name].completed++;
+  });
+  const modalBarData = Object.entries(assigneeCounts).map(([name, c]) => ({
+    label: name.split(' ')[0],
+    value: c.total > 0 ? Math.round((c.completed / c.total) * 100) : 0
+  }));
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -316,23 +397,42 @@ function ReportModal({ loading, meeting, minutes, onClose }) {
                 </div>
               </section>
 
+              {/* Charts in the modal */}
+              <section className="rounded-2xl border border-slate-100 p-6 bg-white shadow-sm">
+                <h3 className="text-sm font-black uppercase tracking-wider text-slate-700 mb-6">Task Analytics</h3>
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {/* Pie chart: task status breakdown */}
+                  <div className="flex flex-col items-center">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">Task Status Breakdown</h4>
+                    {modalPieData.length > 0 ? (
+                      <PieChart data={modalPieData} />
+                    ) : (
+                      <p className="text-sm text-slate-400 italic mt-8">No tasks recorded</p>
+                    )}
+                  </div>
+                  {/* Bar chart: completion % per assignee */}
+                  <div className="flex flex-col">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">Completion (%) by Assignee</h4>
+                    <div className="flex-1 flex items-end min-h-[180px]">
+                      {modalBarData.length > 0 ? (
+                        <BarChart data={modalBarData} />
+                      ) : (
+                        <p className="text-sm text-slate-400 italic mt-8">No assignee data</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </section>
+
               <section className="rounded-2xl border border-slate-100 p-6 bg-white shadow-sm">
                 <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between mb-6">
                   <h3 className="text-sm font-black uppercase tracking-wider text-slate-700">Action Items Status</h3>
                   <div className="flex flex-wrap gap-2">
                     <TaskMetric label="Total" value={taskStats.total} color="slate" />
                     <TaskMetric label="Completed" value={taskStats.completed} color="emerald" />
+                    <TaskMetric label="Submitted" value={taskStats.submitted} color="blue" />
                     <TaskMetric label="Pending" value={taskStats.pending} color="amber" />
                   </div>
-                </div>
-
-                <div className="mb-6">
-                  <PieChart data={[
-                    { label: 'Completed', value: taskStats.completed, color: '#10b981' },
-                    { label: 'Submitted', value: taskStats.submitted, color: '#3b82f6' },
-                    { label: 'Pending', value: taskStats.pending, color: '#f59e0b' },
-                    { label: 'Not Submitted', value: taskStats.notSubmitted, color: '#94a3b8' }
-                  ].filter(d => d.value > 0)} />
                 </div>
 
                 <div className="overflow-hidden rounded-xl border border-slate-100">
@@ -395,6 +495,7 @@ function TaskMetric({ label, value, color }) {
   const colorMap = {
     slate: 'bg-slate-100 text-slate-700',
     emerald: 'bg-emerald-100 text-emerald-700',
+    blue: 'bg-blue-100 text-blue-700',
     amber: 'bg-amber-100 text-amber-700',
   }
   return (

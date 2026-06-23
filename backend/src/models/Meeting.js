@@ -169,13 +169,17 @@ class Meeting {
       upcomingResult, 
       meetingTaskComparisonResult, 
       topParticipantsResult, 
-      delinquentMeetingsResult
+      delinquentMeetingsResult,
+      statusDistResult,
+      distinctStatusResult
     ] = await Promise.all([
       pool.query(
         `
           SELECT
             COUNT(DISTINCT m.id)::int AS total_meetings,
             COUNT(DISTINCT m.id) FILTER (WHERE m.status ILIKE 'scheduled')::int AS scheduled_meetings,
+            COUNT(DISTINCT m.id) FILTER (WHERE m.meeting_date < CURRENT_DATE)::int AS completed_meetings,
+            COUNT(DISTINCT m.id) FILTER (WHERE m.meeting_date BETWEEN CURRENT_DATE AND CURRENT_DATE + 3)::int AS upcoming_soon,
             COUNT(DISTINCT m.id) FILTER (WHERE m.status ILIKE 'scheduled' AND m.meeting_date < CURRENT_DATE)::int AS scheduled_past_meetings,
             COUNT(DISTINCT m.id) FILTER (WHERE m.meeting_date BETWEEN CURRENT_DATE AND CURRENT_DATE + 3)::int AS closing_soon_meetings,
             COUNT(DISTINCT mm.id)::int AS meetings_with_minutes,
@@ -203,16 +207,26 @@ class Meeting {
       pool.query(
         `
           SELECT 
+            m.id AS meeting_id,
             m.title AS meeting_title, 
             COUNT(at.id)::int AS total_tasks,
             COUNT(at.id) FILTER (WHERE at.status IN ('completed', 'approved', 'submitted'))::int AS completed_tasks,
-            COUNT(at.id) FILTER (WHERE COALESCE(at.status, 'pending') IN ('pending', 'in_progress', 'rejected'))::int AS pending_tasks
+            COUNT(at.id) FILTER (WHERE COALESCE(at.status, 'pending') IN ('pending', 'in_progress', 'rejected'))::int AS pending_tasks,
+            CASE WHEN COUNT(at.id) > 0 
+              THEN ROUND((COUNT(at.id) FILTER (WHERE at.status IN ('completed', 'approved', 'submitted'))::numeric / COUNT(at.id)) * 100)::int 
+              ELSE 0 END AS completed_pct,
+            (SELECT string_agg(DISTINCT u2.fullname, ', ')
+             FROM assigned_tasks at2
+             JOIN meeting_minutes mm2 ON mm2.id = at2.minutes_id
+             JOIN users u2 ON u2.id = at2.assigned_to
+             WHERE mm2.meeting_id = m.id AND at2.status IN ('completed', 'approved', 'submitted')
+            ) AS top_submitters
           FROM meetings m
           LEFT JOIN meeting_minutes mm ON mm.meeting_id = m.id
           LEFT JOIN assigned_tasks at ON at.minutes_id = mm.id
           GROUP BY m.id, m.title
           ORDER BY m.meeting_date DESC
-          LIMIT 8
+          LIMIT 10
         `
       ),
       pool.query(
@@ -247,6 +261,20 @@ class Meeting {
           ORDER BY pending_tasks DESC, m.meeting_date DESC
           LIMIT 6
         `
+      ),
+      pool.query(
+        `
+          SELECT COALESCE(m.status, 'scheduled') AS label, COUNT(m.id)::int AS value
+          FROM meetings m
+          GROUP BY m.status
+        `
+      ),
+      pool.query(
+        `
+          SELECT DISTINCT COALESCE(status, 'scheduled') AS status_value
+          FROM meetings
+          ORDER BY status_value
+        `
       )
     ]);
 
@@ -255,7 +283,9 @@ class Meeting {
       upcomingMeetings: upcomingResult.rows,
       meetingTaskComparison: meetingTaskComparisonResult.rows,
       topParticipants: topParticipantsResult.rows,
-      delinquentMeetings: delinquentMeetingsResult.rows
+      delinquentMeetings: delinquentMeetingsResult.rows,
+      statusDistribution: statusDistResult.rows,
+      distinctStatuses: distinctStatusResult.rows.map(r => r.status_value)
     };
   }
 
