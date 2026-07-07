@@ -1,7 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { AppButton } from '@/components/AppButton';
 import { useAuth } from '@/context/AuthContext';
 import { colors, radii, spacing } from '@/theme/appTheme';
@@ -15,15 +15,15 @@ export function LoginScreen({ navigation }: Props) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleLogin() {
     setError('');
     setSubmitting(true);
     try {
       await login({ username: username.trim(), password });
-      // AppNavigator will automatically switch to 'Main' once isAuthenticated becomes true
-    } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Login failed');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Login failed');
     } finally {
       setSubmitting(false);
     }
@@ -37,7 +37,7 @@ export function LoginScreen({ navigation }: Props) {
       <Text style={styles.title}>Digital Meeting Minutes</Text>
       <Text style={styles.subtitle}>Sign in to manage meetings, minutes, and action items.</Text>
 
-      <View style={styles.form}>
+      <View style={styles.card}>
         <TextInput
           autoCapitalize="none"
           placeholder="Username"
@@ -45,19 +45,28 @@ export function LoginScreen({ navigation }: Props) {
           style={styles.input}
           value={username}
           onChangeText={setUsername}
+          autoCorrect={false}
         />
-        <TextInput
-          placeholder="Password"
-          placeholderTextColor={colors.muted}
-          secureTextEntry
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-        />
+        <View style={styles.passwordContainer}>
+          <TextInput
+            placeholder="Password"
+            placeholderTextColor={colors.muted}
+            secureTextEntry={!showPassword}
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <TouchableOpacity onPress={() => setShowPassword(v => !v)} style={styles.eyeButton}>
+            <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={colors.muted} />
+          </TouchableOpacity>
+        </View>
+
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <AppButton
-          disabled={submitting || !username.trim() || !password}
           title={submitting ? 'Signing in...' : 'Login'}
+          disabled={submitting || !username.trim() || !password}
           onPress={handleLogin}
         />
       </View>
@@ -67,26 +76,20 @@ export function LoginScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.background,
     flex: 1,
+    backgroundColor: colors.background,
     justifyContent: 'center',
-    alignItems: 'stretch',
-    // remove horizontal padding – we'll add margin on the form instead
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
+    alignItems: 'center',
     padding: spacing.lg,
   },
   brandMark: {
     alignItems: 'center',
-    alignSelf: 'center',
     backgroundColor: colors.primary,
     borderRadius: radii.md,
     height: 54,
     justifyContent: 'center',
-    marginBottom: spacing.lg,
     width: 54,
+    marginBottom: spacing.lg,
   },
   brandMarkText: {
     color: colors.secondary,
@@ -99,19 +102,26 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     lineHeight: 36,
     textAlign: 'center',
+    marginBottom: spacing.sm,
   },
   subtitle: {
     color: colors.muted,
     fontSize: 15,
     lineHeight: 22,
-    marginTop: spacing.sm,
     textAlign: 'center',
+    marginBottom: spacing.lg,
   },
-  form: {
-    gap: spacing.md,
-    marginTop: spacing.xl,
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
     width: '100%',
-    marginHorizontal: spacing.lg,
+    maxWidth: 350,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   input: {
     backgroundColor: colors.surface,
@@ -123,10 +133,23 @@ const styles = StyleSheet.create({
     height: 52,
     paddingHorizontal: spacing.md,
     width: '100%',
+    maxWidth: 320,
+    alignSelf: 'center',
+    marginBottom: spacing.sm,
+  },
+  passwordContainer: {
+    position: 'relative',
+    marginBottom: spacing.sm,
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: spacing.md,
+    top: 16,
   },
   error: {
     color: colors.danger,
     fontSize: 14,
     textAlign: 'center',
+    marginBottom: spacing.sm,
   },
 });
