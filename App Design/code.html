@@ -1,0 +1,192 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Digital Meeting - Welcome</title>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-on-surface": "#edf0ff",
+                    "surface-bright": "#faf9ff",
+                    "secondary-fixed": "#d9e2ff",
+                    "primary-container": "#0052cc",
+                    "outline": "#737685",
+                    "tertiary-fixed": "#d6e3f7",
+                    "primary": "#003d9b",
+                    "on-tertiary-fixed": "#101c2b",
+                    "on-background": "#051a3e",
+                    "inverse-primary": "#b2c5ff",
+                    "on-secondary": "#ffffff",
+                    "tertiary-container": "#4f5c6c",
+                    "on-secondary-container": "#003179",
+                    "on-primary-container": "#c4d2ff",
+                    "surface-container-low": "#f1f3ff",
+                    "on-secondary-fixed-variant": "#00419d",
+                    "on-primary": "#ffffff",
+                    "surface-container-highest": "#d8e2ff",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed-dim": "#b1c6ff",
+                    "outline-variant": "#c3c6d6",
+                    "on-surface": "#051a3e",
+                    "on-tertiary-container": "#c7d4e8",
+                    "surface-dim": "#ccdaff",
+                    "on-primary-fixed": "#001848",
+                    "error-container": "#ffdad6",
+                    "on-error-container": "#93000a",
+                    "inverse-surface": "#1d3054",
+                    "on-surface-variant": "#434654",
+                    "tertiary-fixed-dim": "#bbc7db",
+                    "on-primary-fixed-variant": "#0040a2",
+                    "primary-fixed-dim": "#b2c5ff",
+                    "on-secondary-fixed": "#001946",
+                    "on-tertiary": "#ffffff",
+                    "secondary": "#285ab9",
+                    "surface-container-high": "#e1e8ff",
+                    "surface-variant": "#d8e2ff",
+                    "on-error": "#ffffff",
+                    "surface": "#faf9ff",
+                    "tertiary": "#384454",
+                    "surface-tint": "#0c56d0",
+                    "background": "#faf9ff",
+                    "surface-container": "#e9edff",
+                    "secondary-container": "#709bfe",
+                    "on-tertiary-fixed-variant": "#3b4858",
+                    "error": "#ba1a1a",
+                    "primary-fixed": "#dae2ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "margin-sm": "16px",
+                    "margin-lg": "32px",
+                    "gutter-md": "16px",
+                    "unit": "4px",
+                    "gutter-xs": "8px",
+                    "container-max": "1280px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "label-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #faf9ff;
+            color: #051a3e;
+            overflow: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom micro-interactions */
+        .btn-hover-effect {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-hover-effect:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(0, 61, 155, 0.2);
+        }
+        .btn-hover-effect:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col items-center justify-center">
+<!-- Welcome Content Canvas -->
+<main class="relative z-10 w-full max-w-container-max px-margin-sm md:px-margin-lg flex flex-col items-center justify-center space-y-8 text-center">
+<!-- Animated Asset Container -->
+<div class="w-full max-w-md md:max-w-xl aspect-square flex items-center justify-center">
+
+</div>
+<!-- Typography Section -->
+<div class="space-y-4">
+<h1 class="font-headline-lg text-headline-lg md:text-5xl text-primary animate-fade-in text-6xl" style="opacity: 1; transform: translateY(0px); transition: 0.8s ease-out;">
+                Welcome
+            </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-sm mx-auto">
+                Step into your high-stakes professional digital workspace with precision and clarity.
+            </p>
+</div>
+<!-- Action Section -->
+<div class="pt-4 pt-8">
+<button class="btn-hover-effect px-16 py-5 bg-primary text-on-primary rounded-full font-headline-md text-headline-md flex items-center gap-4 shadow-lg" id="start-button">
+                Get Started
+                <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</main>
+<!-- Background Decorative Elements (Subtle Blue-Scale Tones) -->
+<div class="absolute inset-0 pointer-events-none overflow-hidden">
+<div class="absolute -top-24 -left-24 w-96 h-96 bg-primary-container/5 rounded-full blur-3xl"></div>
+<div class="absolute -bottom-24 -right-24 w-96 h-96 bg-secondary-container/10 rounded-full blur-3xl"></div>
+</div>
+<script>
+        document.getElementById('start-button').addEventListener('click', function() {
+            // Visual feedback before redirect
+            this.innerHTML = `
+                <span class="material-symbols-outlined animate-spin" data-icon="progress_activity">progress_activity</span>
+                Loading...
+            `;
+            this.classList.add('opacity-80', 'cursor-not-allowed');
+            
+            // Artificial delay to simulate transition to login
+            setTimeout(() => {
+                // In a real app, this would be: window.location.href = '/login';
+                console.log('Redirecting to login...');
+                // For demonstration, we'll just show an alert or stay on the screen
+                // as navigation shells are suppressed for this transactional flow.
+                alert('Navigating to login page...');
+            }, 600);
+        });
+
+        // Add simple entry animation
+        document.addEventListener('DOMContentLoaded', () => {
+            const elements = document.querySelectorAll('.animate-fade-in');
+            elements.forEach((el, index) => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(10px)';
+                el.style.transition = 'all 0.8s ease-out';
+                setTimeout(() => {
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, index * 200);
+            });
+        });
+    </script>
+
+
+</body></html>
