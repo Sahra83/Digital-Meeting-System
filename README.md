@@ -48,6 +48,4 @@ The platform includes authentication and role-based access control so that users
 
 https://digitalmeeting24.com/
 
-## Built Engineer
 
-Built by Eng Abdihakiin Gedi Mohamed.
