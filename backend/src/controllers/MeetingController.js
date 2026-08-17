@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const Meeting = require('../models/Meeting');
 const db = require('../config/db');
 const { sendMeetingInvitation } = require('../services/emailService');
+const { sendSms } = require('../services/smsService');
 const userService = require('../services/userService');
 const ApiError = require('../utils/apiError');
 
@@ -77,6 +78,86 @@ const sendMeetingNotificationsInBackground = async (meetingId, type = 'invitatio
   }
 
   console.log(`[meeting email] Finished ${label} notifications for meeting ${meetingId}`);
+};
+
+/**
+ * Sends SMS notifications to all meeting participants who have a phone number.
+ * Runs in the background after the API response is already sent.
+ * @param {string|number} meetingId
+ * @param {'invitation'|'update'} type
+ */
+const sendMeetingSmsNotificationsInBackground = async (meetingId, type = 'invitation') => {
+  const label = type === 'update' ? 'update' : 'invitation';
+  console.log(`[meeting sms] Starting SMS ${label} notifications for meeting ${meetingId}`);
+
+  // Fetch meeting details
+  const meetingResult = await db.query(
+    `SELECT m.title, m.meeting_date, m.meeting_time, m.location, u.fullname AS organizer_fullname
+     FROM meetings m
+     JOIN users u ON u.id = m.organizer_id
+     WHERE m.id = $1`,
+    [meetingId]
+  );
+
+  const meeting = meetingResult.rows[0];
+  if (!meeting) {
+    console.error(`[meeting sms] Meeting not found for SMS ${label}: ${meetingId}`);
+    return;
+  }
+
+  // Fetch participant phone numbers
+  const participantsResult = await db.query(
+    `SELECT u.fullname, u.phone
+     FROM meeting_participants mp
+     JOIN users u ON u.id = mp.user_id
+     WHERE mp.meeting_id = $1
+       AND u.phone IS NOT NULL
+       AND trim(u.phone) <> ''`,
+    [meetingId]
+  );
+
+  if (participantsResult.rows.length === 0) {
+    console.log(`[meeting sms] No participant phone numbers found for meeting ${meetingId}`);
+    return;
+  }
+
+  const phoneNumbers = participantsResult.rows.map((p) => p.phone);
+  console.log(
+    `[meeting sms] Found ${phoneNumbers.length} phone number(s) for meeting ${meetingId}`
+  );
+
+  // Format a concise SMS message
+  const dateStr = meeting.meeting_date
+    ? new Date(meeting.meeting_date).toLocaleDateString('en-US', {
+        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+      })
+    : 'TBD';
+  const timeStr = meeting.meeting_time || 'TBD';
+  const locationStr = meeting.location || 'TBD';
+
+  let smsMessage;
+  if (type === 'update') {
+    smsMessage =
+      `[Meeting Update] "${meeting.title}" has been updated.\n` +
+      `Date: ${dateStr}\nTime: ${timeStr}\nLocation: ${locationStr}\n` +
+      `Organizer: ${meeting.organizer_fullname}`;
+  } else {
+    smsMessage =
+      `[Meeting Invitation] supax wnagsan macanpdan see iithy xld wafi iga qapo qad makujirtid waa ujeeda aa kusalaamee  "${meeting.title}".\n` +
+      `Date: ${dateStr}\nTime: ${timeStr}\nLocation: ${locationStr}\n` +
+      `Organizer: ${meeting.organizer_fullname}`;
+  }
+
+  try {
+    await sendSms(smsMessage, phoneNumbers);
+    console.log(`[meeting sms] SMS ${label} sent successfully for meeting ${meetingId}`);
+  } catch (err) {
+    console.error(`[meeting sms] SMS ${label} failed for meeting ${meetingId}:`, {
+      message: err.message,
+    });
+  }
+
+  console.log(`[meeting sms] Finished SMS ${label} notifications for meeting ${meetingId}`);
 };
 
 const getDefaultParticipantRoleId = async () => {
@@ -180,6 +261,11 @@ class MeetingController {
         sendMeetingNotificationsInBackground(meeting.id, 'invitation').catch((err) => {
           console.error(`[meeting email] Failed to process invitations for meeting ${meeting.id}:`, err);
         });
+
+        console.log(`[meeting create] Queued invitation SMS for meeting ${meeting.id}`);
+        sendMeetingSmsNotificationsInBackground(meeting.id, 'invitation').catch((err) => {
+          console.error(`[meeting sms] Failed to process invitation SMS for meeting ${meeting.id}:`, err);
+        });
       });
     } catch (err) {
       const status = err.statusCode || 500;
@@ -261,6 +347,11 @@ class MeetingController {
         console.log(`[meeting update] Queued update emails for meeting ${meeting.id}`);
         sendMeetingNotificationsInBackground(meeting.id, 'update').catch((err) => {
           console.error(`[meeting email] Failed to process update emails for meeting ${meeting.id}:`, err);
+        });
+
+        console.log(`[meeting update] Queued update SMS for meeting ${meeting.id}`);
+        sendMeetingSmsNotificationsInBackground(meeting.id, 'update').catch((err) => {
+          console.error(`[meeting sms] Failed to process update SMS for meeting ${meeting.id}:`, err);
         });
       });
     } catch (err) {
