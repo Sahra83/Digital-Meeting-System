@@ -8,13 +8,9 @@ process.on('unhandledRejection', (err) => {
   process.exit(1);
 });
 
-const path = require('path');
-const dotenvResult = require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-if (dotenvResult.error) {
-  console.error('⚠️  Failed to load .env file:', dotenvResult.error.message);
-} else {
-  console.log('✅ .env loaded from:', path.resolve(__dirname, '../.env'));
-}
+// Load .env for local development. In Docker, env vars are injected by the runtime.
+// dotenv silently does nothing if the file is absent (override:false is the default).
+require('dotenv').config();
 const app = require('./app');
 
 const http = require('http');
