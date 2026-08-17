@@ -8,7 +8,13 @@ process.on('unhandledRejection', (err) => {
   process.exit(1);
 });
 
-require('dotenv').config();
+const path = require('path');
+const dotenvResult = require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+if (dotenvResult.error) {
+  console.error('⚠️  Failed to load .env file:', dotenvResult.error.message);
+} else {
+  console.log('✅ .env loaded from:', path.resolve(__dirname, '../.env'));
+}
 const app = require('./app');
 
 const http = require('http');
