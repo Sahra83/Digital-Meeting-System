@@ -3,8 +3,7 @@ const http = require('http');
 const { URL } = require('url');
 
 const SMS_BASE_URL = 'https://sms.tabaarak.com';
-const SMS_USERNAME = process.env.SMS_API_USERNAME;
-const SMS_PASSWORD = process.env.SMS_API_PASSWORD;
+// Credentials are read at call time (not module load time) so dotenv values are always available.
 
 /**
  * Normalizes Somali mobile numbers to 252XXXXXXXXX format.
@@ -59,6 +58,8 @@ const makeRequest = (url, options, body = null) => {
  * Authenticates with the Tabaarak SMS Gateway and returns a token.
  */
 const getSmsToken = async () => {
+  const SMS_USERNAME = process.env.SMS_API_USERNAME;
+  const SMS_PASSWORD = process.env.SMS_API_PASSWORD;
   console.log('[sms] Authenticating with Tabaarak SMS Gateway...');
 
   const bodyPayload = JSON.stringify({
@@ -98,6 +99,9 @@ const sendSms = async (message, mobileNumbers) => {
     console.warn('[sms] No valid mobile numbers provided, skipping SMS.');
     return;
   }
+
+  const SMS_USERNAME = process.env.SMS_API_USERNAME;
+  const SMS_PASSWORD = process.env.SMS_API_PASSWORD;
 
   if (!SMS_USERNAME || !SMS_PASSWORD) {
     console.warn('[sms] SMS_API_USERNAME or SMS_API_PASSWORD not configured. Skipping SMS.');
