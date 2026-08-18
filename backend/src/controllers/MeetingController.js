@@ -135,25 +135,31 @@ const sendMeetingSmsNotificationsInBackground = async (meetingId, type = 'invita
   const timeStr = meeting.meeting_time || 'TBD';
   const locationStr = meeting.location || 'TBD';
 
-  let smsMessage;
   if (type === 'update') {
-    smsMessage =
-      `[Meeting Update] "${meeting.title}" has been updated.\n` +
+    const smsMessage =
+      `[Update] "${meeting.title}" updated.\n` +
       `Date: ${dateStr}\nTime: ${timeStr}\nLocation: ${locationStr}\n` +
-      `Organizer: ${meeting.organizer_fullname}`;
+      `Org: ${meeting.organizer_fullname}`;
+      
+    try {
+      await sendSms(smsMessage, phoneNumbers);
+      console.log(`[meeting sms] SMS update sent successfully for meeting ${meetingId}`);
+    } catch (err) {
+      console.error(`[meeting sms] SMS update failed for meeting ${meetingId}:`, err.message);
+    }
   } else {
-    // Shortened to ~30 chars to prevent local telecom operators from dropping the message
-    const shortTitle = meeting.title.length > 15 ? meeting.title.substring(0, 15) + '...' : meeting.title;
-    smsMessage = `Kulan: ${shortTitle} @ ${timeStr}`;
-  }
-
-  try {
-    await sendSms(smsMessage, phoneNumbers);
-    console.log(`[meeting sms] SMS ${label} sent successfully for meeting ${meetingId}`);
-  } catch (err) {
-    console.error(`[meeting sms] SMS ${label} failed for meeting ${meetingId}:`, {
-      message: err.message,
-    });
+    // Loop through each participant so we can include their name
+    for (const p of participantsResult.rows) {
+      // Keeping it optimized under 160 characters to prevent telecom drops!
+      const smsMessage = `Dear ${p.fullname}, you are invited to ${meeting.title} on ${dateStr} at ${timeStr}, Location: ${locationStr}. We hope you attend. Thank you, ${meeting.organizer_fullname}`;
+      
+      try {
+        await sendSms(smsMessage, [p.phone]);
+        console.log(`[meeting sms] SMS invitation sent successfully to ${p.fullname}`);
+      } catch (err) {
+        console.error(`[meeting sms] SMS invitation failed for ${p.fullname}:`, err.message);
+      }
+    }
   }
 
   console.log(`[meeting sms] Finished SMS ${label} notifications for meeting ${meetingId}`);
