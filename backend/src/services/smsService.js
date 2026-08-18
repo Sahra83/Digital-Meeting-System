@@ -10,8 +10,14 @@ const SMS_BASE_URL = 'https://sms.tabaarak.com';
  */
 const normalizePhone = (phone) => {
   let cleaned = phone.replace(/\D/g, '');
+  
+  // Strip country code if present for local routing (Tabaarak expects e.g., 61xxxxxxx)
+  if (cleaned.startsWith('00252')) cleaned = cleaned.substring(5);
+  else if (cleaned.startsWith('252')) cleaned = cleaned.substring(3);
+  
+  // Strip leading zero if present
   if (cleaned.startsWith('0')) cleaned = cleaned.substring(1);
-  if (!cleaned.startsWith('252')) cleaned = '252' + cleaned;
+  
   return cleaned;
 };
 
