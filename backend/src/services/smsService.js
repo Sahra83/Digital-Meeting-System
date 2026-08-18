@@ -79,10 +79,12 @@ const getSmsToken = async () => {
     throw new Error(`[sms] Authentication failed (Status ${response.status}): ${JSON.stringify(response.body)}`);
   }
 
-  const token = response.body?.Token || response.body?.token || response.body;
+  const token = response.body?.data?.token || response.body?.token || response.body?.Token;
   if (!token) {
     throw new Error(`[sms] Authentication successful but no token received: ${JSON.stringify(response.body)}`);
   }
+  
+  console.log(`[sms] Successfully authenticated. Token starts with: ${String(token).substring(0, 10)}...`);
 
   return token;
 };
@@ -126,9 +128,10 @@ const sendSms = async (message, mobileNumbers) => {
 
   const token = await getSmsToken();
 
+  console.log(`[sms] Payload being sent to Gateway: ${JSON.stringify({ smsMessage: message, mobile: normalizedNumbers })}`);
   const bodyPayload = JSON.stringify({
-    Message: message,
-    MobileNumbers: normalizedNumbers,
+    smsMessage: message,
+    mobile: normalizedNumbers,
   });
 
   const response = await makeRequest(`${SMS_BASE_URL}/Sms/sendsms`, {
