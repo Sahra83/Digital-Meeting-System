@@ -138,9 +138,8 @@ const sendMeetingSmsNotificationsInBackground = async (meetingId, type = 'invita
   if (type === 'update') {
     const smsMessage =
       `[Update] "${meeting.title}" updated.\n` +
-      `Date: ${dateStr}\nTime: ${timeStr}\nLocation: ${locationStr}\n` +
-      `Org: ${meeting.organizer_fullname}`;
-      
+      `Date: ${dateStr} ${timeStr}\nLocation: ${locationStr}\n` +
+      `Org: ${meeting.organizer_fullname}\nDetails: https://www.digitalmeeting24.com/login`;
     try {
       await sendSms(smsMessage, phoneNumbers);
       console.log(`[meeting sms] SMS update sent successfully for meeting ${meetingId}`);
@@ -148,11 +147,9 @@ const sendMeetingSmsNotificationsInBackground = async (meetingId, type = 'invita
       console.error(`[meeting sms] SMS update failed for meeting ${meetingId}:`, err.message);
     }
   } else {
-    // Loop through each participant so we can include their name
+    // Loop through each participant to personalize the invitation and include portal link
     for (const p of participantsResult.rows) {
-      // Keeping it optimized under 160 characters to prevent telecom drops!
-      const smsMessage = `Dear ${p.fullname}, you are invited to ${meeting.title} on ${dateStr} at ${timeStr}, Location: ${locationStr}. We hope you attend. Thank you, ${meeting.organizer_fullname}`;
-      
+      const smsMessage = `Dear ${p.fullname}, ${meeting.title} @ ${dateStr} ${timeStr}. Loc:${locationStr}. More:https://www.digitalmeeting24.com/login. Org:${meeting.organizer_fullname}`;
       try {
         await sendSms(smsMessage, [p.phone]);
         console.log(`[meeting sms] SMS invitation sent successfully to ${p.fullname}`);
