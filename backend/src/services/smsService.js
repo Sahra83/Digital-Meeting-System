@@ -63,7 +63,7 @@ const getSmsToken = async () => {
   console.log('[sms] Authenticating with Tabaarak SMS Gateway...');
 
   const bodyPayload = JSON.stringify({
-    Username: SMS_USERNAME,
+    Name: SMS_USERNAME,
     Password: SMS_PASSWORD,
   });
 
