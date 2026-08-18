@@ -142,10 +142,9 @@ const sendMeetingSmsNotificationsInBackground = async (meetingId, type = 'invita
       `Date: ${dateStr}\nTime: ${timeStr}\nLocation: ${locationStr}\n` +
       `Organizer: ${meeting.organizer_fullname}`;
   } else {
-    smsMessage =
-      `[Meeting Invitation] supax wnagsan macanpdan see iithy xld wafi iga qapo qad makujirtid waa ujeeda aa kusalaamee  "${meeting.title}".\n` +
-      `Date: ${dateStr}\nTime: ${timeStr}\nLocation: ${locationStr}\n` +
-      `Organizer: ${meeting.organizer_fullname}`;
+    // Shortened to ~30 chars to prevent local telecom operators from dropping the message
+    const shortTitle = meeting.title.length > 15 ? meeting.title.substring(0, 15) + '...' : meeting.title;
+    smsMessage = `Kulan: ${shortTitle} @ ${timeStr}`;
   }
 
   try {
