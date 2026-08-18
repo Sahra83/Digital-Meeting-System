@@ -58,8 +58,8 @@ const makeRequest = (url, options, body = null) => {
  * Authenticates with the Tabaarak SMS Gateway and returns a token.
  */
 const getSmsToken = async () => {
-  const SMS_USERNAME = process.env.SMS_API_USERNAME;
-  const SMS_PASSWORD = process.env.SMS_API_PASSWORD;
+  const SMS_USERNAME = process.env.SMS_API_USERNAME || 'sahra';
+  const SMS_PASSWORD = process.env.SMS_API_PASSWORD || 'S@hr0382!!';
   console.log('[sms] Authenticating with Tabaarak SMS Gateway...');
 
   const bodyPayload = JSON.stringify({
@@ -100,8 +100,8 @@ const sendSms = async (message, mobileNumbers) => {
     return;
   }
 
-  const SMS_USERNAME = process.env.SMS_API_USERNAME;
-  const SMS_PASSWORD = process.env.SMS_API_PASSWORD;
+  const SMS_USERNAME = process.env.SMS_API_USERNAME || 'sahra';
+  const SMS_PASSWORD = process.env.SMS_API_PASSWORD || 'S@hr0382!!';
 
   if (!SMS_USERNAME || !SMS_PASSWORD) {
     console.warn('[sms] SMS_API_USERNAME or SMS_API_PASSWORD not configured. Skipping SMS.');
